@@ -53,7 +53,7 @@ function AppContent() {
   useEffect(() => {
     // Initialize auth
     supabase.auth.getSession()
-      .then(({ data: { session } }) => {
+      .then(({ data: { session } }: any) => {
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
@@ -62,7 +62,7 @@ function AppContent() {
           fetchWishlist(session.user.id).catch(console.error)
         }
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error('Error getting supabase session:', err)
       })
       .finally(() => {
@@ -71,7 +71,7 @@ function AppContent() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (_event: any, session: any) => {
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
