@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
-import { supabase } from './lib/supabase'
+import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { useAuthStore } from './store/useAuthStore'
 import { useCartStore } from './store/useCartStore'
 import { useWishlistStore } from './store/useWishlistStore'
@@ -52,16 +52,22 @@ function AppContent() {
 
   useEffect(() => {
     // Initialize auth
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-        fetchCart(session.user.id)
-        fetchWishlist(session.user.id)
-      }
-      setLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchProfile(session.user.id).catch(console.error)
+          fetchCart(session.user.id).catch(console.error)
+          fetchWishlist(session.user.id).catch(console.error)
+        }
+      })
+      .catch((err) => {
+        console.error('Error getting supabase session:', err)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -69,9 +75,15 @@ function AppContent() {
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
-          fetchProfile(session.user.id)
-          fetchCart(session.user.id)
-          fetchWishlist(session.user.id)
+          try {
+            await Promise.all([
+              fetchProfile(session.user.id),
+              fetchCart(session.user.id),
+              fetchWishlist(session.user.id)
+            ])
+          } catch (err) {
+            console.error('Error fetching user data on auth change:', err)
+          }
         }
       }
     )
@@ -117,7 +129,51 @@ function AppContent() {
   )
 }
 
+function SupabaseErrorScreen() {
+  return (
+    <div className="min-h-screen bg-[#1a1a2e] text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+      <div className="max-w-md w-full bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 shadow-2xl flex flex-col gap-6">
+        <div className="w-16 h-16 rounded-2xl bg-[#e94560]/20 text-[#e94560] flex items-center justify-center border border-[#e94560]/30 mx-auto text-3xl font-bold">
+          ⚡
+        </div>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Configuration Required</h1>
+          <p className="text-white/60 text-sm mt-2 leading-relaxed">
+            Vastrini needs Supabase environment variables to connect to the database. These are currently missing on your live deployment.
+          </p>
+        </div>
+
+        <div className="h-px bg-white/10 my-1" />
+
+        <div className="text-left space-y-3 text-sm">
+          <p className="font-semibold text-white/80">To fix this on Vercel:</p>
+          <ol className="list-decimal pl-5 space-y-2 text-white/60">
+            <li>Go to your <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-[#e94560] hover:underline font-semibold">Vercel Project Dashboard</a>.</li>
+            <li>Navigate to <strong>Settings</strong> &rarr; <strong>Environment Variables</strong>.</li>
+            <li>Add <strong><code className="text-white bg-white/10 px-1.5 py-0.5 rounded font-mono">VITE_SUPABASE_URL</code></strong> with your Supabase API URL.</li>
+            <li>Add <strong><code className="text-white bg-white/10 px-1.5 py-0.5 rounded font-mono">VITE_SUPABASE_ANON_KEY</code></strong> with your Anon Public Key.</li>
+            <li>Redeploy your project for the changes to take effect.</li>
+          </ol>
+        </div>
+
+        <a
+          href="https://github.com/ShashankSAras04/Vasthrini"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[#e94560] hover:bg-[#c73652] text-white font-bold py-3.5 rounded-xl transition duration-300 shadow-lg shadow-[#e94560]/20 mt-2 block"
+        >
+          View Documentation
+        </a>
+      </div>
+    </div>
+  )
+}
+
 function App() {
+  if (!isSupabaseConfigured) {
+    return <SupabaseErrorScreen />
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
