@@ -12,9 +12,8 @@ import toast from 'react-hot-toast'
 
 const navLinks = [
   { label: 'New Arrivals', href: '/shop?filter=new' },
-  { label: 'Men', href: '/shop?gender=men' },
-  { label: 'Women', href: '/shop?gender=women' },
-  { label: 'Kids', href: '/shop?gender=kids' },
+  { label: 'Women', href: '/shop?gender=Women' },
+  { label: 'Kids', href: '/shop?gender=Kids' },
   { label: 'Sale', href: '/shop?filter=sale' },
 ]
 
@@ -343,7 +342,7 @@ export default function CustomerLayout() {
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Shop</h4>
               <ul className="space-y-2.5">
-                {['Men', 'Women', 'Kids', 'New Arrivals', 'Sale'].map((item) => (
+                {['Women', 'Kids', 'New Arrivals', 'Sale'].map((item) => (
                   <li key={item}>
                     <Link
                       to={`/shop?gender=${item.toLowerCase()}`}

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Headphones, RotateCcw, Shield, Truck } from 'lucide-react';
+import { ChevronDown, Headphones, Shield, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from '../../components/ProductCard';
 import { supabase } from '../../lib/supabase';
@@ -65,11 +65,6 @@ const trustBadges = [
     desc: 'On all orders above ₹999',
   },
   {
-    icon: RotateCcw,
-    title: 'Easy Returns',
-    desc: '30-day hassle-free returns',
-  },
-  {
     icon: Shield,
     title: 'Secure Payment',
     desc: '100% encrypted transactions',
@@ -77,7 +72,7 @@ const trustBadges = [
   {
     icon: Headphones,
     title: '24/7 Support',
-    desc: 'We\'re always here for you',
+    desc: "We're always here for you",
   },
 ];
 
@@ -342,49 +337,6 @@ export default function HomePage() {
           </motion.div>
         </section>
 
-        {/* ================================================================ */}
-        {/* 4. SALE BANNER SECTION                                            */}
-        {/* ================================================================ */}
-        <motion.section
-          className="mx-4 md:mx-8 my-8 rounded-3xl overflow-hidden"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-80px' }}
-          variants={fadeInUp}
-        >
-          <div
-            className="relative flex flex-col md:flex-row items-center justify-between gap-8 px-10 py-16 md:py-20"
-            style={{
-              background: 'linear-gradient(135deg, #e94560 0%, #c73652 100%)',
-            }}
-          >
-            {/* Decorative circles */}
-            <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/2" />
-
-            <div className="relative z-10 text-center md:text-left">
-              <p className="text-white/80 uppercase tracking-[0.3em] text-sm font-semibold mb-3">
-                Limited Time Offer
-              </p>
-              <h2 className="text-4xl md:text-6xl font-black text-white leading-tight">
-                SALE UP TO<br />
-                <span className="text-yellow-300">50% OFF</span>
-              </h2>
-              <p className="text-white/80 mt-3 text-lg">
-                Limited time offer. Shop now!
-              </p>
-            </div>
-
-            <div className="relative z-10">
-              <button
-                onClick={() => navigate('/shop?sale=true')}
-                className="bg-white text-[#e94560] font-black text-lg px-12 py-5 rounded-full hover:scale-105 transition-transform shadow-xl active:scale-95"
-              >
-                Shop Sale
-              </button>
-            </div>
-          </div>
-        </motion.section>
 
         {/* ================================================================ */}
         {/* 5. TRUST BADGES SECTION                                           */}
