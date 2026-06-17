@@ -12,7 +12,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 // ─── Zod Schemas ─────────────────────────────────────────────────────────────
 
 const loginSchema = z.object({
-  email: z.string().email('Enter a valid email').min(1, 'Email is required'),
+  email: z.string().min(1, 'Email or username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -117,8 +117,50 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
+      // Admin bypass credentials check
+      const inputEmail = values.email.trim().toLowerCase();
+      if ((inputEmail === 'admin' || inputEmail === 'admin@vastrini.com' || inputEmail === 'admin@vasthrini.com') && values.password === 'admin@678') {
+        const mockUser = {
+          id: 'admin-bypass-id',
+          email: 'admin@vastrini.com',
+          role: 'authenticated',
+          aud: 'authenticated',
+          app_metadata: {},
+          user_metadata: { first_name: 'Admin', last_name: 'User' },
+          created_at: new Date().toISOString(),
+        } as any;
+        
+        const mockProfile = {
+          id: 'admin-bypass-id',
+          first_name: 'Admin',
+          last_name: 'User',
+          role: 'admin',
+          email: 'admin@vastrini.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any;
+
+        const { setUser, setSession, setProfile } = useAuthStore.getState();
+        setUser(mockUser);
+        setProfile(mockProfile);
+        setSession({
+          user: mockUser,
+          access_token: 'mock-token',
+          refresh_token: 'mock-token',
+          expires_in: 3600,
+          token_type: 'bearer',
+        } as any);
+
+        toast.success('Welcome back, Admin!');
+        navigate('/admin');
+        return;
+      }
+
+      // Normal authentication flow
+      // If the email is just 'admin', append a mock domain so Supabase doesn't throw 'Invalid email'
+      const emailToSubmit = values.email.includes('@') ? values.email : `${values.email}@vastrini.com`;
       const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
+        email: emailToSubmit,
         password: values.password,
       });
       if (error) throw error;
@@ -136,9 +178,9 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       <InputField
         id="login-email"
-        label="Email Address"
-        type="email"
-        placeholder="you@example.com"
+        label="Email Address or Username"
+        type="text"
+        placeholder="you@example.com or admin"
         icon={<Mail size={16} />}
         error={errors.email?.message}
         registration={register('email')}
