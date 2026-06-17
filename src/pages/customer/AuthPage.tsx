@@ -117,53 +117,32 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // Admin bypass credentials check
-      const inputEmail = values.email.trim().toLowerCase();
-      if (inputEmail === 'admin@gmail.com' && values.password === 'admin@12345') {
-        const mockUser = {
-          id: 'admin-bypass-id',
-          email: 'admin@gmail.com',
-          role: 'authenticated',
-          aud: 'authenticated',
-          app_metadata: {},
-          user_metadata: { first_name: 'Admin', last_name: 'User' },
-          created_at: new Date().toISOString(),
-        } as any;
-        
-        const mockProfile = {
-          id: 'admin-bypass-id',
-          first_name: 'Admin',
-          last_name: 'User',
-          role: 'admin',
-          email: 'admin@gmail.com',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as any;
-
-        const { setUser, setSession, setProfile } = useAuthStore.getState();
-        setUser(mockUser);
-        setProfile(mockProfile);
-        setSession({
-          user: mockUser,
-          access_token: 'mock-admin-token',
-          refresh_token: 'mock-admin-token',
-          expires_in: 3600,
-          token_type: 'bearer',
-        } as any);
-
-        toast.success('Welcome back, Admin!');
-        navigate('/admin');
-        return;
-      }
-
-      // Normal Supabase authentication
-      const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
+      // Real Supabase authentication — works for all users including admin
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: values.email.trim(),
         password: values.password,
       });
       if (error) throw error;
+
+      // Fetch the user's profile to determine role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.warn('Profile fetch error:', profileError.message);
+      }
+
       toast.success('Welcome back!');
-      navigate('/');
+
+      // Redirect admin users to admin panel, others to home
+      if (profile?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
       toast.error(message);
@@ -528,12 +507,12 @@ const TabToggle = ({ activeTab, onSwitch }: TabToggleProps) => (
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
 
   // Redirect if already logged in
   if (user) {
-    navigate('/', { replace: true });
+    navigate(profile?.role === 'admin' ? '/admin' : '/', { replace: true });
     return null;
   }
 
