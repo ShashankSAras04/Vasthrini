@@ -1,12 +1,38 @@
+import os
 import urllib.request
 import urllib.error
 import json
 
-PROJECT_REF = "lgbfzxjrqmnjawqnnaej"
-SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYmZ6eGpycW1uamF3cW5uYWVqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTE4Mjc1NCwiZXhwIjoyMDk2NzU4NzU0fQ.hGMEOIicYDKSlG0sjCMFXMu3gR7vDPpNYRFq7SvC8Wc"
+# Try to load environment variables from local .env if present
+if os.path.exists(".env"):
+    with open(".env", "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            # Remove optional quotes surrounding the value
+            val = val.strip().strip("'\"")
+            os.environ[key.strip()] = val
+
+# Load keys from environment
+SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_SERVICE_ROLE_KEY", "")
+
+# Determine Project Ref from VITE_SUPABASE_URL or use a default
+supabase_url = os.getenv("VITE_SUPABASE_URL", "")
+PROJECT_REF = ""
+if supabase_url:
+    PROJECT_REF = supabase_url.replace("https://", "").replace("http://", "").split(".")[0]
+
+if not PROJECT_REF:
+    PROJECT_REF = "lgbfzxjrqmnjawqnnaej"
+
 API_URL = f"https://api.supabase.com/v1/projects/{PROJECT_REF}/database/query"
 
 def execute_sql(sql, label="query"):
+    if not SERVICE_KEY:
+        print(f"[FAIL] {label} — Skipped: SUPABASE_SERVICE_ROLE_KEY is not set.")
+        return False
     payload = json.dumps({"query": sql}).encode("utf-8")
     req = urllib.request.Request(
         API_URL,
