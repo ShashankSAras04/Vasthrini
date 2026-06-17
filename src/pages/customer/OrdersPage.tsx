@@ -75,7 +75,7 @@ export default function OrdersPage() {
           {orders.map((order) => {
             const items = (order as any).items || []
             const firstProduct = items[0]?.product
-            const firstImage = firstProduct?.images?.[0]?.url
+            const firstImage = firstProduct?.images?.[0]?.image_url
 
             return (
               <Link
@@ -86,7 +86,7 @@ export default function OrdersPage() {
                 <div className="flex items-start gap-4">
                   <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                     {firstImage ? (
-                      <img src={firstImage} alt="" className="w-full h-full object-cover" />
+                      <img src={firstImage} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package size={24} className="text-gray-400" />

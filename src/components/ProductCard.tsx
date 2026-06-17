@@ -74,6 +74,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               src={primaryImage.image_url}
               alt={primaryImage.alt_text || product.name}
               className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+              loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
@@ -85,6 +87,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               src={secondaryImage.image_url}
               alt={secondaryImage.alt_text || product.name}
               className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              loading="lazy"
+              decoding="async"
             />
           )}
 

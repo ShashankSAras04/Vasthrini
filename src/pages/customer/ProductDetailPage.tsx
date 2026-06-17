@@ -37,7 +37,7 @@ export default function ProductDetailPage() {
           images:product_images(*),
           category:categories(*),
           brand:brands(*),
-          variants:product_variants(*),
+          variants:product_sizes(*),
           reviews:reviews(*, profile:profiles(*))
         `)
         .eq('slug', slug!)
@@ -191,6 +191,8 @@ export default function ProductDetailPage() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </AnimatePresence>
 
@@ -355,8 +357,9 @@ export default function ProductDetailPage() {
                 </button>
                 <span className="w-12 text-center font-semibold text-gray-900">{quantity}</span>
                 <button
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                  onClick={() => setQuantity((q) => Math.min(q + 1, selectedVariant?.stock_qty ?? 99))}
+                  disabled={!!selectedVariant && quantity >= selectedVariant.stock_qty}
+                  className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Plus size={16} />
                 </button>

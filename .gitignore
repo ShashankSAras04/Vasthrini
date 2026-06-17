@@ -25,3 +25,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Scripts directory (may contain sensitive keys)
+scripts/

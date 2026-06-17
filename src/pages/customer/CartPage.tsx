@@ -13,17 +13,8 @@ import {
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
+import type { Coupon } from '../../types/database';
 import toast from 'react-hot-toast';
-
-interface Coupon {
-  id: string;
-  code: string;
-  discount_type: 'percentage' | 'fixed';
-  discount_value: number;
-  min_order_amount: number | null;
-  expires_at: string | null;
-  is_active: boolean;
-}
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -159,10 +150,12 @@ export default function CartPage() {
                     {/* Product Image */}
                     <div className="w-20 h-20 flex-shrink-0">
                       {imageUrl ? (
-                        <img
+                          <img
                           src={imageUrl}
                           alt={item.variant?.product?.name ?? ''}
                           className="w-20 h-20 object-cover rounded-xl"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center">

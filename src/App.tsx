@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
@@ -6,35 +6,36 @@ import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { useAuthStore } from './store/useAuthStore'
 import { useCartStore } from './store/useCartStore'
 import { useWishlistStore } from './store/useWishlistStore'
+import ErrorBoundary from './components/ErrorBoundary'
 
-// Layouts
+// Layouts (not lazy — tiny, needed immediately)
 import CustomerLayout from './layouts/CustomerLayout'
 import AdminLayout from './layouts/AdminLayout'
-
-// Customer Pages
-import HomePage from './pages/customer/HomePage'
-import ShopPage from './pages/customer/ShopPage'
-import ProductDetailPage from './pages/customer/ProductDetailPage'
-import CartPage from './pages/customer/CartPage'
-import CheckoutPage from './pages/customer/CheckoutPage'
-import WishlistPage from './pages/customer/WishlistPage'
-import OrdersPage from './pages/customer/OrdersPage'
-import OrderDetailPage from './pages/customer/OrderDetailPage'
-import ProfilePage from './pages/customer/ProfilePage'
-import AuthPage from './pages/customer/AuthPage'
-
-// Admin Pages
-import AdminOverviewPage from './pages/admin/AdminOverviewPage'
-import AdminProductsPage from './pages/admin/AdminProductsPage'
-import AdminOrdersPage from './pages/admin/AdminOrdersPage'
-import AdminCategoriesPage from './pages/admin/AdminCategoriesPage'
-import AdminCouponsPage from './pages/admin/AdminCouponsPage'
-import AdminUsersPage from './pages/admin/AdminUsersPage'
-import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 // Guards
 import ProtectedRoute from './routes/ProtectedRoute'
 import AdminRoute from './routes/AdminRoute'
+
+// ─── Lazy-loaded Customer Pages ───────────────────────────────────────────────
+const HomePage          = lazy(() => import('./pages/customer/HomePage'))
+const ShopPage          = lazy(() => import('./pages/customer/ShopPage'))
+const ProductDetailPage = lazy(() => import('./pages/customer/ProductDetailPage'))
+const CartPage          = lazy(() => import('./pages/customer/CartPage'))
+const CheckoutPage      = lazy(() => import('./pages/customer/CheckoutPage'))
+const WishlistPage      = lazy(() => import('./pages/customer/WishlistPage'))
+const OrdersPage        = lazy(() => import('./pages/customer/OrdersPage'))
+const OrderDetailPage   = lazy(() => import('./pages/customer/OrderDetailPage'))
+const ProfilePage       = lazy(() => import('./pages/customer/ProfilePage'))
+const AuthPage          = lazy(() => import('./pages/customer/AuthPage'))
+
+// ─── Lazy-loaded Admin Pages ──────────────────────────────────────────────────
+const AdminOverviewPage   = lazy(() => import('./pages/admin/AdminOverviewPage'))
+const AdminProductsPage   = lazy(() => import('./pages/admin/AdminProductsPage'))
+const AdminOrdersPage     = lazy(() => import('./pages/admin/AdminOrdersPage'))
+const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage'))
+const AdminCouponsPage    = lazy(() => import('./pages/admin/AdminCouponsPage'))
+const AdminUsersPage      = lazy(() => import('./pages/admin/AdminUsersPage'))
+const AdminSettingsPage   = lazy(() => import('./pages/admin/AdminSettingsPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,13 +46,22 @@ const queryClient = new QueryClient({
   },
 })
 
+// ─── Page loading fallback ────────────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-8 h-8 border-4 border-[#e94560] border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+}
+
 function AppContent() {
   const { setUser, setSession, setLoading, fetchProfile } = useAuthStore()
   const { fetchCart } = useCartStore()
   const { fetchWishlist } = useWishlistStore()
 
   useEffect(() => {
-    // Initialize auth
+    // Initialize auth from existing session
     supabase.auth.getSession()
       .then(({ data: { session } }: any) => {
         setSession(session)
@@ -84,47 +94,71 @@ function AppContent() {
           } catch (err) {
             console.error('Error fetching user data on auth change:', err)
           }
+        } else {
+          // User signed out — clear cart and wishlist
+          useCartStore.setState({ items: [] })
+          useWishlistStore.setState({ items: [] })
         }
       }
     )
 
-    return () => subscription.unsubscribe()
+    // Re-validate session on tab focus (catches expired JWT)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data: { session } }: any) => {
+          if (!session) {
+            setUser(null)
+            setSession(null)
+            useCartStore.setState({ items: [] })
+            useWishlistStore.setState({ items: [] })
+          }
+        }).catch(console.error)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Customer Routes */}
-        <Route element={<CustomerLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="shop" element={<ShopPage />} />
-          <Route path="product/:slug" element={<ProductDetailPage />} />
-          <Route path="auth" element={<AuthPage />} />
-          <Route element={<ProtectedRoute />}>
-            <Route path="cart" element={<CartPage />} />
-            <Route path="checkout" element={<CheckoutPage />} />
-            <Route path="wishlist" element={<WishlistPage />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="orders/:id" element={<OrderDetailPage />} />
-            <Route path="profile" element={<ProfilePage />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Customer Routes */}
+          <Route element={<CustomerLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="shop" element={<ShopPage />} />
+            <Route path="product/:slug" element={<ProductDetailPage />} />
+            <Route path="auth" element={<AuthPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="cart" element={<CartPage />} />
+              <Route path="checkout" element={<CheckoutPage />} />
+              <Route path="wishlist" element={<WishlistPage />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="orders/:id" element={<OrderDetailPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Admin Routes */}
-        <Route path="admin" element={<AdminRoute />}>
-          <Route element={<AdminLayout />}>
-            <Route index element={<AdminOverviewPage />} />
-            <Route path="products" element={<AdminProductsPage />} />
-            <Route path="orders" element={<AdminOrdersPage />} />
-            <Route path="categories" element={<AdminCategoriesPage />} />
-            <Route path="coupons" element={<AdminCouponsPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
+          {/* Admin Routes */}
+          <Route path="admin" element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route index element={<AdminOverviewPage />} />
+              <Route path="products" element={<AdminProductsPage />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="categories" element={<AdminCategoriesPage />} />
+              <Route path="coupons" element={<AdminCouponsPage />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
@@ -175,21 +209,23 @@ function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            borderRadius: '10px',
-            background: '#1a1a2e',
-            color: '#fff',
-            fontSize: '14px',
-          },
-        }}
-      />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AppContent />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              borderRadius: '10px',
+              background: '#1a1a2e',
+              color: '#fff',
+              fontSize: '14px',
+            },
+          }}
+        />
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 
