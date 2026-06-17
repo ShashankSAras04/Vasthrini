@@ -119,7 +119,7 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
     try {
       // Admin bypass credentials check
       const inputEmail = values.email.trim().toLowerCase();
-      if (inputEmail === 'admin@gmail.com' && values.password === 'Admin@123') {
+      if (inputEmail === 'admin@gmail.com' && values.password === 'admin@12345') {
         const mockUser = {
           id: 'admin-bypass-id',
           email: 'admin@gmail.com',
