@@ -23,7 +23,7 @@ export default function AdminProductsPage() {
   const [discountPrice, setDiscountPrice] = useState('')
   const [stock, setStock] = useState('0')
   const [sku, setSku] = useState('')
-  const [gender, setGender] = useState<'men' | 'women' | 'unisex' | 'kids' | 'boys' | 'girls'>('unisex')
+  const [gender, setGender] = useState<'women' | 'unisex' | 'kids' | 'boys' | 'girls'>('unisex')
   const [color, setColor] = useState('')
   const [material, setMaterial] = useState('')
   const [featured, setFeatured] = useState(false)
@@ -608,7 +608,6 @@ export default function AdminProductsPage() {
                     onChange={(e) => setGender(e.target.value as any)}
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:border-slate-400"
                   >
-                    <option value="men">Men</option>
                     <option value="women">Women</option>
                     <option value="unisex">Unisex</option>
                     <option value="kids">Kids</option>

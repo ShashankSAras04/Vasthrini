@@ -1,7 +1,7 @@
 // Database types matching the Supabase schema
 
 export type UserRole = 'customer' | 'admin'
-export type GenderType = 'men' | 'women' | 'unisex' | 'kids' | 'boys' | 'girls'
+export type GenderType = 'women' | 'unisex' | 'kids' | 'boys' | 'girls'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type PaymentMethod = 'cod' | 'bank_transfer' | 'upi' | 'other'
 export type OrderStatus = 'pending' | 'confirmed' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned'

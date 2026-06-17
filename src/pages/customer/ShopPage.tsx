@@ -14,7 +14,7 @@ import ProductCard from '../../components/ProductCard';
 import type { Product, Category, Brand } from '../../types/database';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const GENDER_OPTIONS = ['Men', 'Women', 'Unisex', 'Kids', 'Boys', 'Girls'] as const;
+const GENDER_OPTIONS = ['Women', 'Unisex', 'Kids', 'Boys', 'Girls'] as const;
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest' },
   { value: 'price_asc', label: 'Price: Low to High' },
