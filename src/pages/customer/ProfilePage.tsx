@@ -31,7 +31,7 @@ export default function ProfilePage() {
   const [addressLine2, setAddressLine2] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
-  const [pincode, setPincode] = useState('')
+  const [postalCode, setPostalCode] = useState('')
 
   useEffect(() => {
     if (profile) {
@@ -141,7 +141,7 @@ export default function ProfilePage() {
         city,
         state,
         country: 'India',
-        pincode,
+        postal_code: postalCode,
       }
 
       if (editingAddress) {
@@ -182,7 +182,7 @@ export default function ProfilePage() {
     setAddressLine2(addr.address_line2 || '')
     setCity(addr.city)
     setState(addr.state)
-    setPincode(addr.pincode)
+    setPostalCode(addr.postal_code)
     setShowAddressForm(true)
   }
 
@@ -225,7 +225,7 @@ export default function ProfilePage() {
     setAddressLine2('')
     setCity('')
     setState('')
-    setPincode('')
+    setPostalCode('')
   }
 
   return (
@@ -423,8 +423,8 @@ export default function ProfilePage() {
                       <input
                         type="text"
                         required
-                        value={pincode}
-                        onChange={(e) => setPincode(e.target.value)}
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
                         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1a1a2e]"
                       />
                     </div>
@@ -527,7 +527,7 @@ export default function ProfilePage() {
                       <h4 className="font-bold text-gray-900">{addr.full_name}</h4>
                       <p className="text-sm text-gray-500 mt-1">{addr.address_line1}</p>
                       {addr.address_line2 && <p className="text-sm text-gray-500">{addr.address_line2}</p>}
-                      <p className="text-sm text-gray-500">{addr.city}, {addr.state} - {addr.pincode}</p>
+                      <p className="text-sm text-gray-500">{addr.city}, {addr.state} - {(addr as any).postal_code}</p>
                       <p className="text-sm text-gray-500 mt-2 font-medium">Phone: {addr.phone}</p>
                     </div>
 

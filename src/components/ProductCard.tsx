@@ -94,7 +94,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-            {product.featured && (
+            {product.is_featured && (
               <span className="px-2 py-0.5 bg-[#1a1a2e] text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
                 Featured
               </span>

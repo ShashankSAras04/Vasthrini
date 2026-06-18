@@ -309,7 +309,7 @@ export default function ShopPage() {
       const { data, error } = await supabase
         .from('products')
         .select(
-          '*, images:product_images(*), category:categories(*), brand:brands(*), variants:product_variants(*)'
+          '*, images:product_images(*), category:categories(*), brand:brands(*), variants:product_sizes(*)'
         )
         .eq('is_active', true);
       if (error) throw error;

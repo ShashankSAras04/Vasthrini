@@ -21,7 +21,7 @@ const addressSchema = z.object({
   city: z.string().min(2),
   state: z.string().min(2),
   country: z.string().min(1),
-  pincode: z.string().min(6).max(6),
+  postal_code: z.string().min(6).max(6),
 })
 type AddressForm = z.infer<typeof addressSchema>
 
@@ -223,7 +223,7 @@ export default function CheckoutPage() {
                         <p className="text-sm text-gray-600 mt-0.5">
                           {addr.address_line1}
                           {addr.address_line2 ? `, ${addr.address_line2}` : ''},
-                          {' '}{addr.city}, {addr.state} — {addr.pincode}
+                           {addr.city}, {addr.state} — {(addr as any).postal_code}
                         </p>
                         <p className="text-sm text-gray-500">📞 {addr.phone}</p>
                         {addr.is_default && (
@@ -289,8 +289,8 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Pincode</label>
-                    <input {...register('pincode')} placeholder="400001" className={inputCls} maxLength={6} />
-                    {errors.pincode && <p className={errorCls}>{errors.pincode.message}</p>}
+                     <input {...register('postal_code')} placeholder="400001" className={inputCls} maxLength={6} />
+                     {errors.postal_code && <p className={errorCls}>{errors.postal_code.message}</p>}
                   </div>
                   <div className="flex items-end">
                     <button

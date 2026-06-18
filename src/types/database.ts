@@ -58,9 +58,9 @@ export interface Product {
   sku?: string | null
   color?: string | null
   material?: string | null
-  featured: boolean
-  new_arrival: boolean
-  best_seller: boolean
+  is_featured: boolean
+  is_new_arrival: boolean
+  is_best_seller: boolean
   is_active: boolean
   rating_avg: number
   rating_count: number
@@ -77,14 +77,9 @@ export interface ProductVariant {
   id: string
   product_id: string
   size: string
-  color: string
-  color_hex: string | null
-  sku: string
-  stock_qty: number
-  extra_price: number
-  is_active: boolean
+  quantity: number   // real column name in product_sizes
+  stock_qty?: number // alias used in some queries
   created_at: string
-  updated_at: string
 }
 
 export interface ProductImage {
@@ -108,7 +103,7 @@ export interface Address {
   city: string
   state: string
   country: string
-  pincode: string
+  postal_code: string // DB column name (was 'pincode' in frontend — now fixed)
   is_default: boolean
   created_at: string
   updated_at: string

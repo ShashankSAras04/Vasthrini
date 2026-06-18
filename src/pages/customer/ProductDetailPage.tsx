@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Star, Heart, ShoppingBag, Plus, Minus,
-  Share2, Check, Package, RotateCcw, Shield, Truck
+  Share2, Package, RotateCcw, Shield, Truck
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -21,7 +21,6 @@ export default function ProductDetailPage() {
   const { addToCart } = useCartStore()
   const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlistStore()
 
-  const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [activeImage, setActiveImage] = useState(0)
@@ -97,22 +96,18 @@ export default function ProductDetailPage() {
   const variants = product.variants ?? []
   const reviews = (product as any).reviews ?? []
 
-  const uniqueColors = [...new Set(variants.map((v: ProductVariant) => v.color))]
-  const uniqueSizes = [...new Set(
-    variants
-      .filter((v: ProductVariant) => !selectedColor || v.color === selectedColor)
-      .map((v: ProductVariant) => v.size)
-  )]
+  // product_sizes schema: { id, product_id, size, quantity }
+  const availableSizes = variants.map((v: ProductVariant) => ({
+    id: v.id,
+    size: v.size,
+    stock: (v as any).quantity ?? v.stock_qty ?? 0,
+  }))
 
-  const selectedVariant = variants.find(
-    (v: ProductVariant) =>
-      (!selectedColor || v.color === selectedColor) &&
-      (!selectedSize || v.size === selectedSize)
-  )
+  const selectedVariant = availableSizes.find(v => v.size === selectedSize)
 
   const displayPrice = product.discount_price ?? product.price
   const hasDiscount = !!(product.discount_price && product.discount_price < product.price)
-  const discountPct = hasDiscount
+  const discountPct = hasDiscount && product.price > 0
     ? Math.round((1 - product.discount_price! / product.price) * 100)
     : 0
 
@@ -120,10 +115,12 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!user) { toast.error('Please sign in first'); navigate('/auth'); return }
-    if (!selectedVariant) { toast.error('Please select size and color'); return }
+    if (!selectedSize) { toast.error('Please select a size'); return }
+    const variant = availableSizes.find(v => v.size === selectedSize)
+    if (!variant) { toast.error('Size not available'); return }
     setAddingToCart(true)
     try {
-      await addToCart(user.id, selectedVariant.id, quantity)
+      await addToCart(user.id, variant.id, quantity)
       toast.success('Added to cart!')
     } catch {
       toast.error('Failed to add to cart')
@@ -270,45 +267,8 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Color Selector */}
-            {uniqueColors.length > 0 && (
-              <div className="mb-5">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Color:{' '}
-                  <span className="font-normal text-gray-500">{selectedColor || 'Select'}</span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {uniqueColors.map((color) => {
-                    const variant = variants.find((v: ProductVariant) => v.color === color)
-                    return (
-                      <button
-                        key={color}
-                        onClick={() => {
-                          setSelectedColor(color)
-                          setSelectedSize(null)
-                        }}
-                        title={color}
-                        className={`w-9 h-9 rounded-full border-2 transition-all relative ${
-                          selectedColor === color
-                            ? 'border-[#1a1a2e] scale-110'
-                            : 'border-gray-300 hover:border-gray-500'
-                        }`}
-                        style={{
-                          backgroundColor: variant?.color_hex || color.toLowerCase(),
-                        }}
-                      >
-                        {selectedColor === color && (
-                          <Check size={14} className="absolute inset-0 m-auto text-white drop-shadow" />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Size Selector */}
-            {uniqueSizes.length > 0 && (
+            {/* Size Selector — product_sizes has size + quantity only (no color) */}
+            {availableSizes.length > 0 && (
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm font-semibold text-gray-700">
@@ -318,13 +278,16 @@ export default function ProductDetailPage() {
                   <button className="text-xs text-[#e94560] underline">Size Guide</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {uniqueSizes.map((size) => (
+                  {availableSizes.map(({ size, stock }) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
+                      disabled={stock === 0}
                       className={`px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all ${
                         selectedSize === size
                           ? 'border-[#1a1a2e] bg-[#1a1a2e] text-white'
+                          : stock === 0
+                          ? 'border-gray-100 text-gray-300 cursor-not-allowed'
                           : 'border-gray-200 text-gray-700 hover:border-gray-400'
                       }`}
                     >
@@ -336,12 +299,12 @@ export default function ProductDetailPage() {
             )}
 
             {/* Stock */}
-            {selectedVariant && selectedVariant.stock_qty < 5 && selectedVariant.stock_qty > 0 && (
+            {selectedVariant && selectedVariant.stock < 5 && selectedVariant.stock > 0 && (
               <p className="text-sm text-[#e94560] font-semibold mb-4">
-                ⚡ Only {selectedVariant.stock_qty} left in stock!
+                ⚡ Only {selectedVariant.stock} left in stock!
               </p>
             )}
-            {selectedVariant && selectedVariant.stock_qty === 0 && (
+            {selectedVariant && selectedVariant.stock === 0 && (
               <p className="text-sm text-gray-500 font-semibold mb-4">Out of stock</p>
             )}
 
@@ -357,8 +320,8 @@ export default function ProductDetailPage() {
                 </button>
                 <span className="w-12 text-center font-semibold text-gray-900">{quantity}</span>
                 <button
-                  onClick={() => setQuantity((q) => Math.min(q + 1, selectedVariant?.stock_qty ?? 99))}
-                  disabled={!!selectedVariant && quantity >= selectedVariant.stock_qty}
+                  onClick={() => setQuantity((q) => Math.min(q + 1, selectedVariant?.stock ?? 99))}
+                  disabled={!!selectedVariant && quantity >= selectedVariant.stock}
                   className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Plus size={16} />
@@ -370,7 +333,7 @@ export default function ProductDetailPage() {
             <div className="flex gap-3 mb-8">
               <button
                 onClick={handleAddToCart}
-                disabled={addingToCart || (selectedVariant?.stock_qty === 0)}
+                disabled={addingToCart || (selectedVariant?.stock === 0)}
                 className="flex-1 flex items-center justify-center gap-2 py-4 bg-[#1a1a2e] text-white font-bold text-base rounded-2xl hover:bg-[#e94560] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {addingToCart ? (

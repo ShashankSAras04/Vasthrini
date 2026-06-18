@@ -53,7 +53,7 @@ export default function AdminProductsPage() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*, category:categories(*), brand:brands(*), variants:product_variants(*), images:product_images(*)')
+        .select('*, category:categories(*), brand:brands(*), variants:product_sizes(*), images:product_images(*)')
         .order('created_at', { ascending: false })
 
       if (error) throw error
