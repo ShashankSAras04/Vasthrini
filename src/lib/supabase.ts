@@ -16,13 +16,13 @@ const isValidKey = (key: string | undefined): boolean => {
 
 export const isSupabaseConfigured = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey)
 
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabaseAnonKey!, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    })
-  : (createClient('https://placeholder-ref.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyLXJlZiIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzgxMTgyNzU0LCJleHAiOjIwOTY3NTg3NTR9.placeholder-sig') as any)
+export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  })
+
+
 

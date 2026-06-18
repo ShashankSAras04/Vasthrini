@@ -92,7 +92,11 @@ export default function ProductDetailPage() {
     )
   }
 
-  const images = product.images ?? []
+  const images = [...(product.images ?? [])].sort((a, b) => {
+    if (a.is_primary && !b.is_primary) return -1
+    if (!a.is_primary && b.is_primary) return 1
+    return (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  })
   const variants = product.variants ?? []
   const reviews = (product as any).reviews ?? []
 
@@ -146,7 +150,7 @@ export default function ProductDetailPage() {
 
   const avgRating = reviews.length
     ? reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length
-    : product.rating_avg
+    : (product.rating_avg || 0)
 
   return (
     <div className="bg-white min-h-screen">
@@ -246,7 +250,7 @@ export default function ProductDetailPage() {
                 ))}
               </div>
               <span className="text-sm text-gray-600">
-                {avgRating.toFixed(1)} ({reviews.length || product.rating_count} reviews)
+                {avgRating.toFixed(1)} ({reviews.length || product.rating_count || 0} reviews)
               </span>
             </div>
 

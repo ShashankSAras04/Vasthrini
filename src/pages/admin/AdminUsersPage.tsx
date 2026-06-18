@@ -57,16 +57,29 @@ export default function AdminUsersPage() {
   }
 
   const toggleActive = async (user: Profile) => {
+    const newActive = !user.is_active
+    const action = newActive ? 'activate' : 'deactivate'
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${user.first_name} ${user.last_name}?`)) return
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: !user.is_active })
-        .eq('id', user.id)
+      const { error } = await supabase.functions.invoke('set-customer-active', {
+        body: { userId: user.id, active: newActive },
+      })
       if (error) throw error
-      toast.success(user.is_active ? 'User deactivated' : 'User activated')
+      toast.success(newActive ? 'User activated' : 'User deactivated')
       fetchUsers()
     } catch (err: any) {
-      toast.error('Failed to update')
+      // Fallback: if Edge Function not deployed yet, update profile directly
+      try {
+        const { error: dbErr } = await supabase
+          .from('profiles')
+          .update({ is_active: newActive })
+          .eq('id', user.id)
+        if (dbErr) throw dbErr
+        toast.success(newActive ? 'User activated (profile only)' : 'User deactivated (profile only)')
+        fetchUsers()
+      } catch {
+        toast.error('Failed to update user status')
+      }
     }
   }
 

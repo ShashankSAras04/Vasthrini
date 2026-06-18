@@ -32,28 +32,7 @@ const registerSchema = z
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-// ─── Google Icon SVG ──────────────────────────────────────────────────────────
 
-const GoogleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M43.611 20.083H42V20H24v8h11.303C33.973 32.515 29.418 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
-      fill="#FFC107"
-    />
-    <path
-      d="M6.306 14.691l6.571 4.819C14.655 15.108 19.001 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
-      fill="#FF3D00"
-    />
-    <path
-      d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.396 0-9.942-3.466-11.29-8.24l-6.516 5.021C9.505 39.556 16.227 44 24 44z"
-      fill="#4CAF50"
-    />
-    <path
-      d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l6.19 5.238C42.021 35.592 44 30.138 44 24c0-1.341-.138-2.65-.389-3.917z"
-      fill="#1976D2"
-    />
-  </svg>
-);
 
 // ─── Reusable Input Field ─────────────────────────────────────────────────────
 
@@ -117,17 +96,16 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // Real Supabase authentication — works for all users including admin
       const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email.trim(),
         password: values.password,
       });
       if (error) throw error;
 
-      // Fetch the user's profile to determine role
+      // Fetch profile to check role AND active status
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_active')
         .eq('id', data.user.id)
         .single();
 
@@ -135,9 +113,14 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
         console.warn('Profile fetch error:', profileError.message);
       }
 
+      // Block deactivated accounts
+      if (profile?.is_active === false) {
+        await supabase.auth.signOut();
+        throw new Error('Your account has been deactivated. Please contact support.');
+      }
+
       toast.success('Welcome back!');
 
-      // Redirect admin users to admin panel, others to home
       if (profile?.role === 'admin') {
         navigate('/admin');
       } else {
@@ -183,14 +166,7 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
         registration={register('password')}
       />
 
-      <div className="flex justify-end -mt-2">
-        <button
-          type="button"
-          className="text-xs text-[#e94560] hover:underline font-medium transition"
-        >
-          Forgot password?
-        </button>
-      </div>
+
 
       <button
         type="submit"
@@ -226,19 +202,7 @@ const LoginForm = ({ onSwitch }: { onSwitch: () => void }) => {
         )}
       </button>
 
-      <div className="relative flex items-center gap-3">
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-xs text-gray-400 font-medium">OR</span>
-        <div className="flex-1 h-px bg-gray-200" />
-      </div>
 
-      <button
-        type="button"
-        className="flex items-center justify-center gap-3 w-full border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-      >
-        <GoogleIcon />
-        Continue with Google
-      </button>
 
       <p className="text-center text-sm text-gray-500">
         Don&apos;t have an account?{' '}
@@ -398,21 +362,7 @@ const RegisterForm = ({ onSwitch }: { onSwitch: () => void }) => {
         )}
       </button>
 
-      <div className="relative flex items-center gap-3">
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-xs text-gray-400 font-medium">OR</span>
-        <div className="flex-1 h-px bg-gray-200" />
-      </div>
-
-      <button
-        type="button"
-        className="flex items-center justify-center gap-3 w-full border border-gray-200 rounded-xl py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-      >
-        <GoogleIcon />
-        Continue with Google
-      </button>
-
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-gray-500 mt-2">
         Already have an account?{' '}
         <button
           type="button"

@@ -9,6 +9,21 @@ import { useAuthStore } from '../store/useAuthStore'
 import { useCartStore } from '../store/useCartStore'
 import { useWishlistStore } from '../store/useWishlistStore'
 import toast from 'react-hot-toast'
+import { supabase } from '../lib/supabase'
+
+const InstagramIcon = ({ size = 18 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+)
+
+const FacebookIcon = ({ size = 18 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+)
 
 const navLinks = [
   { label: 'New Arrivals', href: '/shop?filter=new' },
@@ -23,6 +38,7 @@ export default function CustomerLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [settings, setSettings] = useState<any>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -30,6 +46,31 @@ export default function CustomerLayout() {
   const { user, profile, signOut } = useAuthStore()
   const { getTotalItems } = useCartStore()
   const { items: wishlistItems } = useWishlistStore()
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data, error } = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle()
+        if (error) throw error
+        if (data) {
+          setSettings(data)
+          document.title = data.store_name
+          if (data.favicon_url) {
+            let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']")
+            if (!link) {
+              link = document.createElement('link')
+              link.rel = 'shortcut icon'
+              document.head.appendChild(link)
+            }
+            link.href = data.favicon_url
+          }
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchSettings()
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -74,9 +115,20 @@ export default function CustomerLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Announcement bar */}
-      <div className="bg-[#1a1a2e] text-white text-xs text-center py-2 px-4">
-        🎉 Free shipping on orders above ₹999 | Use code VASTRINI10 for 10% off
-      </div>
+      {settings?.announcement_enabled && (
+        <div
+          style={{ backgroundColor: settings.announcement_bg, color: settings.announcement_fg }}
+          className="text-xs py-2 px-4 overflow-hidden relative w-full border-b border-black/10 select-none"
+        >
+          <div
+            className="animate-marquee font-semibold"
+            style={{ '--marquee-duration': `${settings.announcement_speed || 20}s` } as React.CSSProperties}
+          >
+            <span className="px-8">{settings.announcement_text}</span>
+            <span className="px-8">{settings.announcement_text}</span>
+          </div>
+        </div>
+      )}
 
       {/* Navbar */}
       <header
@@ -89,18 +141,22 @@ export default function CustomerLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <span
-                className="text-2xl font-black tracking-tight"
-                style={{
-                  fontFamily: 'Outfit, sans-serif',
-                  background: 'linear-gradient(135deg, #1a1a2e 0%, #e94560 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                VASTRINI
-              </span>
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              {settings?.logo_url ? (
+                <img src={settings.logo_url} alt={settings.store_name} className="h-9 object-contain" />
+              ) : (
+                <span
+                  className="text-2xl font-black tracking-tight"
+                  style={{
+                    fontFamily: 'Outfit, sans-serif',
+                    background: 'linear-gradient(135deg, #1a1a2e 0%, #e94560 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  {settings?.store_name || 'VASTRINI'}
+                </span>
+              )}
             </Link>
 
             {/* Desktop Nav */}
@@ -333,11 +389,38 @@ export default function CustomerLayout() {
                 className="text-2xl font-black"
                 style={{ fontFamily: 'Outfit, sans-serif' }}
               >
-                VASTRINI
+                {settings?.store_name || 'VASTRINI'}
               </span>
               <p className="mt-3 text-gray-400 text-sm leading-relaxed">
                 Premium clothing for everyone. Inspired by fashion, built for comfort.
               </p>
+              {settings?.social_enabled && (
+                <div className="flex gap-4 mt-4">
+                  {settings.instagram_url && (
+                    <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" aria-label="Instagram">
+                      <InstagramIcon size={18} />
+                    </a>
+                  )}
+                  {settings.facebook_url && (
+                    <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" aria-label="Facebook">
+                      <FacebookIcon size={18} />
+                    </a>
+                  )}
+                  {settings.whatsapp_number && (
+                    <a
+                      href={`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(settings.whatsapp_message || '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-white transition-colors"
+                      aria-label="WhatsApp"
+                    >
+                      <svg fill="currentColor" viewBox="0 0 24 24" width="18" height="18" className="inline-block align-middle">
+                        <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.475 1.332 4.988L2 22l5.176-1.356c1.47.8 3.11 1.222 4.79 1.222 5.506 0 10-4.482 10-9.988 0-5.506-4.494-9.988-10-9.988zm6.54 14.154c-.269.761-1.356 1.482-1.872 1.583-.493.1-1.132.185-3.269-.7-2.735-1.129-4.5-3.918-4.636-4.1-.135-.182-1.1-1.466-1.1-2.793 0-1.328.694-1.98.943-2.247.248-.269.544-.336.726-.336.182 0 .363.003.522.01.166.007.387-.063.606.467.227.549.774 1.884.842 2.022.069.138.113.3.02.484-.093.185-.141.3-.278.462-.138.16-.29.358-.415.48-.138.136-.282.285-.122.56.16.273.71 1.171 1.523 1.894.813.722 1.5.946 1.713 1.05.213.104.339.088.465-.057.126-.145.544-.633.69-.85.145-.216.29-.18.493-.105.203.076 1.29.61 1.512.72.222.11.37.165.425.26.056.095.056.551-.213 1.312z" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Shop</h4>
@@ -357,13 +440,18 @@ export default function CustomerLayout() {
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Help</h4>
               <ul className="space-y-2.5">
-                {['Track Order', 'Returns', 'Size Guide', 'Contact Us', 'FAQs'].map((item) => (
+                {['Track Order', 'Returns', 'Size Guide', 'Contact Us'].map((item) => (
                   <li key={item}>
                     <span className="text-gray-400 text-sm cursor-pointer hover:text-white transition-colors">
                       {item}
                     </span>
                   </li>
                 ))}
+                <li>
+                  <Link to="/faq" className="text-gray-400 text-sm hover:text-white transition-colors">
+                    FAQs
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>

@@ -1,7 +1,7 @@
 // Database types matching the Supabase schema
 
 export type UserRole = 'customer' | 'admin'
-export type GenderType = 'women' | 'unisex' | 'kids' | 'boys' | 'girls'
+export type GenderType = 'men' | 'women' | 'unisex' | 'kids' | 'boys' | 'girls'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type PaymentMethod = 'cod' | 'bank_transfer' | 'upi' | 'other'
 export type OrderStatus = 'pending' | 'confirmed' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned'
@@ -77,9 +77,15 @@ export interface ProductVariant {
   id: string
   product_id: string
   size: string
-  quantity: number   // real column name in product_sizes
+  quantity?: number   // real column name in product_sizes
   stock_qty?: number // alias used in some queries
+  color?: string | null
+  color_hex?: string | null
+  sku?: string | null
+  extra_price?: number
+  is_active?: boolean
   created_at: string
+  updated_at?: string
 }
 
 export interface ProductImage {
@@ -140,7 +146,7 @@ export interface Order {
   discount_amount: number
   shipping_charge: number
   tax_amount: number
-  total_amount: number
+  total: number
   coupon_id: string | null
   address_id: string | null
   notes: string | null

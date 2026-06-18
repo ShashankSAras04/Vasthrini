@@ -218,7 +218,7 @@ export default function AdminOrdersPage() {
                         </span>
                         <p className="text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-wider">{o.payment_method}</p>
                       </td>
-                      <td className="px-6 py-4 font-bold text-slate-955">₹{o.total_amount.toLocaleString('en-IN')}</td>
+                      <td className="px-6 py-4 font-bold text-slate-955">₹{o.total.toLocaleString('en-IN')}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                           o.status === 'delivered'
@@ -328,7 +328,7 @@ export default function AdminOrdersPage() {
                       </div>
                       <div className="flex justify-between text-sm font-bold text-slate-950 pt-2 border-t border-slate-100">
                         <span>Total Amount</span>
-                        <span>₹{selectedOrder.total_amount.toLocaleString('en-IN')}</span>
+                        <span>₹{selectedOrder.total.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
                   </div>

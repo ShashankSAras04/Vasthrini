@@ -120,7 +120,7 @@ export default function OrdersPage() {
                           })}
                         </p>
                         <p className="text-sm font-bold text-gray-900 mt-0.5">
-                          ₹{order.total_amount.toLocaleString('en-IN')}
+                          ₹{order.total.toLocaleString('en-IN')}
                         </p>
                       </div>
                       <ChevronRight

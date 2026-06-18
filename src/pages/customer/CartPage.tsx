@@ -18,11 +18,10 @@ import toast from 'react-hot-toast';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { items, updateQuantity, removeFromCart } = useCartStore();
+  const { items, updateQuantity, removeFromCart, appliedCoupon, setAppliedCoupon } = useCartStore();
   const { user } = useAuthStore();
 
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
 

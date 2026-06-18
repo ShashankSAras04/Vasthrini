@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, MapPin, Camera, Plus, Trash2, Check, Star } from 'lucide-react'
+import { User, MapPin, Camera, Plus, Trash2, Check, Star, Lock } from 'lucide-react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { supabase } from '../../lib/supabase'
 import type { Address } from '../../types/database'
@@ -16,6 +16,11 @@ export default function ProfilePage() {
   const [firstName, setFirstName] = useState(profile?.first_name || '')
   const [lastName, setLastName] = useState(profile?.last_name || '')
   const [phone, setPhone] = useState(profile?.phone || '')
+
+  // Change Password States
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
 
   // Addresses State
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -89,6 +94,30 @@ export default function ProfilePage() {
       toast.error(err.message || 'Failed to update profile')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+    setPasswordLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      toast.success('Password updated successfully!')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password')
+    } finally {
+      setPasswordLoading(false)
     }
   }
 
@@ -295,63 +324,106 @@ export default function ProfilePage() {
               </span>
             </div>
 
-            {/* Profile detail form */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm md:col-span-2">
-              <h2 className="text-xl font-bold text-[#1a1a2e] mb-6">Personal Details</h2>
-              <form onSubmit={handleUpdateProfile} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+            {/* Profile detail form & Change Password */}
+            <div className="md:col-span-2 space-y-6">
+              <div className="bg-white rounded-2xl p-8 shadow-sm">
+                <h2 className="text-xl font-bold text-[#1a1a2e] mb-6">Personal Details</h2>
+                <form onSubmit={handleUpdateProfile} className="space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">First Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1a1a2e]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Last Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1a1a2e]"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">First Name</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
                     <input
-                      type="text"
-                      required
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      type="email"
+                      disabled
+                      value={profile?.email || ''}
+                      className="w-full border border-gray-200 bg-gray-50 text-gray-400 rounded-xl px-4 py-3 text-sm cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Enter phone number"
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1a1a2e]"
                     />
                   </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#1a1a2e] hover:bg-[#e94560] text-white font-bold py-3.5 rounded-xl transition duration-300 flex items-center justify-center gap-2"
+                  >
+                    {loading && <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>}
+                    Save Changes
+                  </button>
+                </form>
+              </div>
+
+              <div className="bg-white rounded-2xl p-8 shadow-sm">
+                <h2 className="text-xl font-bold text-[#1a1a2e] mb-6 flex items-center gap-2">
+                  <Lock size={20} className="text-[#e94560]" />
+                  Change Password
+                </h2>
+                <form onSubmit={handleUpdatePassword} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Last Name</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">New Password</label>
                     <input
-                      type="text"
+                      type="password"
                       required
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1a1a2e]"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
-                  <input
-                    type="email"
-                    disabled
-                    value={profile?.email || ''}
-                    className="w-full border border-gray-200 bg-gray-50 text-gray-400 rounded-xl px-4 py-3 text-sm cursor-not-allowed"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Confirm New Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1a1a2e]"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter phone number"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1a1a2e]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#1a1a2e] hover:bg-[#e94560] text-white font-bold py-3.5 rounded-xl transition duration-300 flex items-center justify-center gap-2"
-                >
-                  {loading && <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>}
-                  Save Changes
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="w-full bg-[#1a1a2e] hover:bg-[#e94560] text-white font-bold py-3.5 rounded-xl transition duration-300 flex items-center justify-center gap-2"
+                  >
+                    {passwordLoading && <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>}
+                    Update Password
+                  </button>
+                </form>
+              </div>
             </div>
           </motion.div>
         ) : (

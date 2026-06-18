@@ -23,7 +23,7 @@ export default function AdminProductsPage() {
   const [discountPrice, setDiscountPrice] = useState('')
   const [stock, setStock] = useState('0')
   const [sku, setSku] = useState('')
-  const [gender, setGender] = useState<'women' | 'unisex' | 'kids' | 'boys' | 'girls'>('unisex')
+  const [gender, setGender] = useState<'men' | 'women' | 'unisex' | 'kids' | 'boys' | 'girls'>('unisex')
   const [color, setColor] = useState('')
   const [material, setMaterial] = useState('')
   const [featured, setFeatured] = useState(false)
@@ -90,9 +90,9 @@ export default function AdminProductsPage() {
     setGender(product.gender || 'unisex')
     setColor(product.color || '')
     setMaterial(product.material || '')
-    setFeatured(product.featured)
-    setNewArrival(product.new_arrival)
-    setBestSeller(product.best_seller)
+    setFeatured(product.is_featured)
+    setNewArrival(product.is_new_arrival)
+    setBestSeller(product.is_best_seller)
     setIsActive(product.is_active)
     setCategoryId(product.category_id)
     setBrandId(product.brand_id || '')
@@ -101,7 +101,7 @@ export default function AdminProductsPage() {
     const prodSizes = product.variants?.map(v => ({
       id: v.id,
       size: v.size,
-      stock_qty: v.stock_qty
+      stock_qty: v.stock_qty ?? v.quantity ?? 0
     })) || []
     setSizes(prodSizes)
 
@@ -234,9 +234,9 @@ export default function AdminProductsPage() {
       gender,
       color: color || null,
       material: material || null,
-      featured,
-      new_arrival: newArrival,
-      best_seller: bestSeller,
+      is_featured: featured,
+      is_new_arrival: newArrival,
+      is_best_seller: bestSeller,
       is_active: isActive,
       category_id: categoryId,
       brand_id: brandId || null,
@@ -295,7 +295,7 @@ export default function AdminProductsPage() {
             product_id: productId,
             image_url: img.image_url,
             is_primary: img.is_primary,
-            display_order: idx
+            sort_order: idx
           }))
           const { error: imgError } = await supabase.from('product_images').insert(imagesToInsert)
           if (imgError) throw imgError
@@ -608,6 +608,7 @@ export default function AdminProductsPage() {
                     onChange={(e) => setGender(e.target.value as any)}
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:border-slate-400"
                   >
+                    <option value="men">Men</option>
                     <option value="women">Women</option>
                     <option value="unisex">Unisex</option>
                     <option value="kids">Kids</option>
@@ -728,7 +729,16 @@ export default function AdminProductsPage() {
                 </div>
 
                 {sizes.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-2">No custom sizes added. Total stock fallback: {stock} units</p>
+                  <div className="space-y-1.5 pt-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Stock Fallback (no custom sizes added)</label>
+                    <input
+                      type="number"
+                      value={stock}
+                      onChange={(e) => setStock(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-slate-400"
+                      min="0"
+                    />
+                  </div>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {sizes.map((s, idx) => (

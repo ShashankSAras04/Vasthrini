@@ -34,7 +34,7 @@ const PAYMENT_METHODS = [
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { items, getTotalPrice, clearCart } = useCartStore()
+  const { items, getTotalPrice, clearCart, appliedCoupon } = useCartStore()
 
   const [step, setStep] = useState<'address' | 'payment'>('address')
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
@@ -90,8 +90,13 @@ export default function CheckoutPage() {
   })
 
   const subtotal = getTotalPrice()
-  const shipping = subtotal >= 999 ? 0 : 99
-  const total = subtotal + shipping
+  const discount = appliedCoupon
+    ? appliedCoupon.discount_type === 'percentage'
+      ? Math.round((subtotal * appliedCoupon.discount_value) / 100)
+      : appliedCoupon.discount_value
+    : 0
+  const shipping = (subtotal - discount) >= 999 ? 0 : 99
+  const total = subtotal - discount + shipping
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) { toast.error('Please select a delivery address'); return }
@@ -99,56 +104,23 @@ export default function CheckoutPage() {
     setPlacing(true)
 
     try {
-      // Create order
-      const orderNumber = `VST${Date.now()}`
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          order_number: orderNumber,
-          status: 'pending',
-          payment_status: 'pending',
-          payment_method: paymentMethod,
-          subtotal,
-          discount_amount: 0,
-          shipping_charge: shipping,
-          tax_amount: 0,
-          total_amount: total,
-          address_id: selectedAddressId,
-        })
-        .select()
-        .single()
-
-      if (orderError) throw orderError
-
-      // Create order items
-      const orderItems = items.map((item) => {
-        const variant = item.variant as any
-        const product = variant?.product
-        const price = (product?.discount_price ?? product?.price ?? 0) + (variant?.extra_price ?? 0)
-        return {
-          order_id: order.id,
-          variant_id: item.variant_id,
-          product_id: product?.id,
-          product_name: product?.name || 'Product',
-          variant_label: `${variant?.size} / ${variant?.color}`,
-          unit_price: price,
-          quantity: item.quantity,
-          subtotal: price * item.quantity,
-        }
+      // Call place_order RPC on Supabase
+      const { data: order, error: orderError } = await supabase.rpc('place_order', {
+        p_address_id: selectedAddressId,
+        p_payment_method: paymentMethod,
+        p_coupon_code: appliedCoupon?.code ?? null
       })
 
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
-      if (itemsError) throw itemsError
+      if (orderError) throw orderError
 
       // Clear cart
       await clearCart(user.id)
 
       toast.success('Order placed successfully! 🎉')
       navigate(`/orders/${order.id}`)
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      toast.error('Failed to place order. Please try again.')
+      toast.error(err.message || 'Failed to place order. Please try again.')
     } finally {
       setPlacing(false)
     }
@@ -391,6 +363,14 @@ export default function CheckoutPage() {
                 <span>Subtotal</span>
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
+              {appliedCoupon && discount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount ({appliedCoupon.code})</span>
+                  <span className="font-semibold">
+                    − ₹{discount.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Shipping</span>
                 <span className={shipping === 0 ? 'text-green-600 font-medium' : ''}>

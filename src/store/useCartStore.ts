@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
-import type { CartItem } from '../types/database'
+import type { CartItem, Coupon } from '../types/database'
 
 interface CartState {
   items: CartItem[]
   loading: boolean
+  appliedCoupon: Coupon | null
   fetchCart: (userId: string) => Promise<void>
   addToCart: (userId: string, variantId: string, quantity?: number) => Promise<void>
   updateQuantity: (userId: string, itemId: string, quantity: number) => Promise<void>
@@ -13,6 +14,7 @@ interface CartState {
   clearCart: (userId: string) => Promise<void>
   getTotalItems: () => number
   getTotalPrice: () => number
+  setAppliedCoupon: (coupon: Coupon | null) => void
 }
 
 export const useCartStore = create<CartState>()(
@@ -20,6 +22,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       loading: false,
+      appliedCoupon: null,
 
       fetchCart: async (userId: string) => {
         set({ loading: true })
@@ -58,6 +61,7 @@ export const useCartStore = create<CartState>()(
                 color_hex: null,
                 sku: product?.sku || '',
                 stock_qty: sizeInfo?.quantity ?? 0,
+                quantity: sizeInfo?.quantity ?? 0,
                 extra_price: 0,
                 is_active: true,
                 created_at: item.created_at,
@@ -122,6 +126,7 @@ export const useCartStore = create<CartState>()(
               color_hex: null,
               sku: product?.sku || '',
               stock_qty: sizeInfo.quantity,
+              quantity: sizeInfo.quantity,
               extra_price: 0,
               is_active: true,
               created_at: sizeInfo.created_at,
@@ -186,7 +191,7 @@ export const useCartStore = create<CartState>()(
             .eq('user_id', userId)
 
           if (error) throw error
-          set({ items: [] })
+          set({ items: [], appliedCoupon: null })
         } catch (err) {
           console.error('Error clearing cart:', err)
         }
@@ -202,10 +207,12 @@ export const useCartStore = create<CartState>()(
           const extra = variant?.extra_price ?? 0
           return sum + (price + extra) * i.quantity
         }, 0),
+
+      setAppliedCoupon: (coupon: Coupon | null) => set({ appliedCoupon: coupon }),
     }),
     {
       name: 'vastrini-cart',
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items, appliedCoupon: state.appliedCoupon }),
     }
   )
 )

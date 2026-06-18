@@ -1,30 +1,34 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Save, Store, MapPin,
-  Truck, Image as ImageIcon, Plus, Trash2, X, GripVertical,
-  Palette
+  Save, Store, Truck, Image as ImageIcon, Plus, Trash2, X,
+  Palette, Upload, Megaphone, Globe
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
 interface StoreSettings {
   store_name: string
-  tagline: string
-  email: string
-  phone: string
-  whatsapp: string
-  address: string
-  city: string
-  state: string
-  pincode: string
-  country: string
-  currency: string
+  logo_url: string | null
+  favicon_url: string | null
+  support_email: string
   free_shipping_threshold: number
-  shipping_fee: number
-  tax_rate: number
-  primary_color: string
-  accent_color: string
+  shipping_charge: number
+  announcement_enabled: boolean
+  announcement_text: string
+  announcement_speed: number
+  announcement_bg: string
+  announcement_fg: string
+  offer_section_enabled: boolean
+  offer_title: string | null
+  offer_subtitle: string | null
+  offer_cta_text: string | null
+  offer_cta_link: string | null
+  instagram_url: string | null
+  whatsapp_number: string | null
+  whatsapp_message: string | null
+  facebook_url: string | null
+  social_enabled: boolean
 }
 
 interface Banner {
@@ -38,32 +42,40 @@ interface Banner {
 }
 
 const defaultSettings: StoreSettings = {
-  store_name: 'Vastrini',
-  tagline: 'Wear Your Story',
-  email: 'support@vastrini.com',
-  phone: '',
-  whatsapp: '',
-  address: '',
-  city: '',
-  state: '',
-  pincode: '',
-  country: 'India',
-  currency: 'INR',
+  store_name: 'Vasthrini',
+  logo_url: null,
+  favicon_url: null,
+  support_email: 'support@vasthrini.com',
   free_shipping_threshold: 999,
-  shipping_fee: 99,
-  tax_rate: 18,
-  primary_color: '#1a1a2e',
-  accent_color: '#e94560',
+  shipping_charge: 99,
+  announcement_enabled: true,
+  announcement_text: '🎉 Free shipping on orders above ₹999 | Use code VASTRINI10 for 10% off',
+  announcement_speed: 20,
+  announcement_bg: '#1a1a2e',
+  announcement_fg: '#ffffff',
+  offer_section_enabled: true,
+  offer_title: 'Special Collection Offer',
+  offer_subtitle: 'Get up to 50% off on newly arrived summer dresses',
+  offer_cta_text: 'Shop Sale',
+  offer_cta_link: '/shop?filter=sale',
+  instagram_url: 'https://instagram.com/vasthrini',
+  whatsapp_number: '919876543210',
+  whatsapp_message: 'Hi, I have a question about my order',
+  facebook_url: 'https://facebook.com/vasthrini',
+  social_enabled: true,
 }
 
-type Tab = 'general' | 'shipping' | 'banners' | 'appearance'
+type Tab = 'brand' | 'shipping' | 'announcement' | 'promo' | 'social' | 'banners'
 
 export default function AdminSettingsPage() {
-  const [tab, setTab] = useState<Tab>('general')
+  const [tab, setTab] = useState<Tab>('brand')
   const [settings, setSettings] = useState<StoreSettings>(defaultSettings)
   const [banners, setBanners] = useState<Banner[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [uploadingFavicon, setUploadingFavicon] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
 
   // Banner form
   const [bannerForm, setBannerForm] = useState({
@@ -78,31 +90,35 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     setLoading(true)
     try {
-      // Try fetching from a settings table
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
-        .limit(1)
+        .eq('id', 1)
         .maybeSingle()
 
       if (!error && data) {
         setSettings({
-          store_name: data.store_name || defaultSettings.store_name,
-          tagline: data.tagline || defaultSettings.tagline,
-          email: data.email || defaultSettings.email,
-          phone: data.phone || defaultSettings.phone,
-          whatsapp: data.whatsapp || defaultSettings.whatsapp,
-          address: data.address || defaultSettings.address,
-          city: data.city || defaultSettings.city,
-          state: data.state || defaultSettings.state,
-          pincode: data.pincode || defaultSettings.pincode,
-          country: data.country || defaultSettings.country,
-          currency: data.currency || defaultSettings.currency,
-          free_shipping_threshold: data.free_shipping_threshold ?? defaultSettings.free_shipping_threshold,
-          shipping_fee: data.shipping_fee ?? defaultSettings.shipping_fee,
-          tax_rate: data.tax_rate ?? defaultSettings.tax_rate,
-          primary_color: data.primary_color || defaultSettings.primary_color,
-          accent_color: data.accent_color || defaultSettings.accent_color,
+          store_name: data.store_name ?? defaultSettings.store_name,
+          logo_url: data.logo_url ?? defaultSettings.logo_url,
+          favicon_url: data.favicon_url ?? defaultSettings.favicon_url,
+          support_email: data.support_email ?? defaultSettings.support_email,
+          free_shipping_threshold: Number(data.free_shipping_threshold ?? defaultSettings.free_shipping_threshold),
+          shipping_charge: Number(data.shipping_charge ?? defaultSettings.shipping_charge),
+          announcement_enabled: data.announcement_enabled ?? defaultSettings.announcement_enabled,
+          announcement_text: data.announcement_text ?? defaultSettings.announcement_text,
+          announcement_speed: Number(data.announcement_speed ?? defaultSettings.announcement_speed),
+          announcement_bg: data.announcement_bg ?? defaultSettings.announcement_bg,
+          announcement_fg: data.announcement_fg ?? defaultSettings.announcement_fg,
+          offer_section_enabled: data.offer_section_enabled ?? defaultSettings.offer_section_enabled,
+          offer_title: data.offer_title ?? defaultSettings.offer_title,
+          offer_subtitle: data.offer_subtitle ?? defaultSettings.offer_subtitle,
+          offer_cta_text: data.offer_cta_text ?? defaultSettings.offer_cta_text,
+          offer_cta_link: data.offer_cta_link ?? defaultSettings.offer_cta_link,
+          instagram_url: data.instagram_url ?? defaultSettings.instagram_url,
+          whatsapp_number: data.whatsapp_number ?? defaultSettings.whatsapp_number,
+          whatsapp_message: data.whatsapp_message ?? defaultSettings.whatsapp_message,
+          facebook_url: data.facebook_url ?? defaultSettings.facebook_url,
+          social_enabled: data.social_enabled ?? defaultSettings.social_enabled,
         })
       }
 
@@ -114,8 +130,8 @@ export default function AdminSettingsPage() {
 
       if (bannerData) setBanners(bannerData)
     } catch (err) {
-      // Settings table might not exist, use defaults
-      console.log('Using default settings')
+      console.error('Error fetching settings:', err)
+      toast.error('Failed to load settings')
     } finally {
       setLoading(false)
     }
@@ -124,34 +140,74 @@ export default function AdminSettingsPage() {
   const saveSettings = async () => {
     setSaving(true)
     try {
-      // Try upsert to site_settings
       const { error } = await supabase
         .from('site_settings')
-        .upsert({ id: 1, ...settings })
+        .upsert({ id: 1, ...settings, updated_at: new Date().toISOString() })
 
-      if (error) {
-        // If table doesn't exist, just show success with defaults saved locally
-        console.warn('site_settings table may not exist:', error.message)
-        toast.success('Settings saved locally (no database table)')
-      } else {
-        toast.success('Settings saved successfully')
-      }
-    } catch (err) {
-      toast.error('Failed to save settings')
+      if (error) throw error
+      toast.success('Settings saved successfully')
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Failed to save settings')
     } finally {
       setSaving(false)
     }
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'favicon' | 'banner') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (type === 'logo') setUploadingLogo(true)
+    else if (type === 'favicon') setUploadingFavicon(true)
+    else if (type === 'banner') setUploadingBanner(true)
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${type}-${crypto.randomUUID()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('site')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('site').getPublicUrl(filePath)
+      
+      if (type === 'logo') {
+        setSettings(prev => ({ ...prev, logo_url: data.publicUrl }))
+        toast.success('Logo uploaded successfully!')
+      } else if (type === 'favicon') {
+        setSettings(prev => ({ ...prev, favicon_url: data.publicUrl }))
+        toast.success('Favicon uploaded successfully!')
+      } else if (type === 'banner') {
+        setBannerForm(prev => ({ ...prev, image_url: data.publicUrl }))
+        toast.success('Banner image uploaded successfully!')
+      }
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Upload failed')
+    } finally {
+      setUploadingLogo(false)
+      setUploadingFavicon(false)
+      setUploadingBanner(false)
+    }
+  }
+
   const addBanner = async () => {
     if (!bannerForm.title.trim() || !bannerForm.image_url.trim()) {
-      toast.error('Title and image URL are required')
+      toast.error('Title and image are required')
       return
     }
     try {
       const { error } = await supabase.from('banners').insert({
-        ...bannerForm,
+        title: bannerForm.title,
+        subtitle: bannerForm.subtitle,
+        image_url: bannerForm.image_url,
+        link_url: bannerForm.link, // DB table has link_url (upgraded in 007)
         sort_order: banners.length,
+        is_active: bannerForm.is_active
       })
       if (error) throw error
       toast.success('Banner added')
@@ -171,7 +227,7 @@ export default function AdminSettingsPage() {
       toast.success('Banner deleted')
       fetchSettings()
     } catch (err: any) {
-      toast.error('Failed to delete')
+      toast.error('Failed to delete banner')
     }
   }
 
@@ -184,15 +240,17 @@ export default function AdminSettingsPage() {
       if (error) throw error
       fetchSettings()
     } catch (err: any) {
-      toast.error('Failed to update')
+      toast.error('Failed to update banner')
     }
   }
 
   const tabs = [
-    { id: 'general' as Tab, label: 'General', icon: Store },
-    { id: 'shipping' as Tab, label: 'Shipping & Tax', icon: Truck },
-    { id: 'banners' as Tab, label: 'Banners', icon: ImageIcon },
-    { id: 'appearance' as Tab, label: 'Appearance', icon: Palette },
+    { id: 'brand' as Tab, label: 'Brand & Identity', icon: Store },
+    { id: 'shipping' as Tab, label: 'Shipping & Rules', icon: Truck },
+    { id: 'announcement' as Tab, label: 'Announcement Bar', icon: Megaphone },
+    { id: 'promo' as Tab, label: 'Offer Strip', icon: Palette },
+    { id: 'social' as Tab, label: 'Social & Footer', icon: Globe },
+    { id: 'banners' as Tab, label: 'Home Banners', icon: ImageIcon },
   ]
 
   if (loading) {
@@ -204,20 +262,20 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-outfit">Settings</h1>
+          <h1 className="text-3xl font-bold text-slate-900 font-outfit">Site Settings</h1>
           <p className="text-slate-500 text-sm mt-1">
-            Configure your store's global settings and preferences.
+            Manage your brand identity, shipping policies, banners, announcement marquee, and social links.
           </p>
         </div>
         {tab !== 'banners' && (
           <button
             onClick={saveSettings}
             disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-50"
+            className="flex items-center gap-2 bg-[#1a1a2e] hover:bg-[#e94560] text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 shadow-sm"
           >
             <Save size={16} />
             {saving ? 'Saving...' : 'Save Settings'}
@@ -226,7 +284,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-slate-100 rounded-xl p-1 overflow-x-auto">
+      <div className="flex bg-slate-100 rounded-xl p-1 overflow-x-auto gap-1 border border-slate-200">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -234,7 +292,7 @@ export default function AdminSettingsPage() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
               tab === t.id
                 ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
             }`}
           >
             <t.icon size={16} />
@@ -243,256 +301,446 @@ export default function AdminSettingsPage() {
         ))}
       </div>
 
-      {/* General Settings */}
-      {tab === 'general' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* Store Info */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Store size={20} className="text-blue-500" />
-              Store Information
+      {/* Brand Identity */}
+      {tab === 'brand' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-150 p-6 shadow-sm space-y-6">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Store size={20} className="text-[#e94560]" />
+              Brand Details
             </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+            
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Store Name
                 </label>
                 <input
                   type="text"
                   value={settings.store_name}
                   onChange={(e) => setSettings({ ...settings, store_name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                  placeholder="e.g. Vasthrini"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Tagline
-                </label>
-                <input
-                  type="text"
-                  value={settings.tagline}
-                  onChange={(e) => setSettings({ ...settings, tagline: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Support Email
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Support Email Address
                 </label>
                 <input
                   type="email"
-                  value={settings.email}
-                  onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  value={settings.support_email}
+                  onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                  placeholder="e.g. support@vasthrini.com"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  value={settings.phone}
-                  onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  WhatsApp
-                </label>
-                <input
-                  type="text"
-                  value={settings.whatsapp}
-                  onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  placeholder="+91XXXXXXXXXX"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Currency
-                </label>
-                <select
-                  value={settings.currency}
-                  onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
-                >
-                  <option value="INR">₹ INR - Indian Rupee</option>
-                  <option value="USD">$ USD - US Dollar</option>
-                  <option value="EUR">€ EUR - Euro</option>
-                  <option value="GBP">£ GBP - British Pound</option>
-                </select>
               </div>
             </div>
-          </div>
 
-          {/* Address */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <MapPin size={20} className="text-blue-500" />
-              Store Address
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Address
+            {/* Logo and Favicon upload rows */}
+            <div className="grid sm:grid-cols-2 gap-8 pt-4">
+              <div className="space-y-3">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Store Logo
                 </label>
-                <input
-                  type="text"
-                  value={settings.address}
-                  onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                    {settings.logo_url ? (
+                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <span className="text-xs text-slate-400">No Logo</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-semibold text-xs rounded-xl cursor-pointer transition">
+                      <Upload size={14} />
+                      {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'logo')}
+                        disabled={uploadingLogo}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[10px] text-slate-400 mt-2">Recommended size: 240x80px (PNG/WebP with transparent bg)</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  City
+
+              <div className="space-y-3">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Browser Favicon
                 </label>
-                <input
-                  type="text"
-                  value={settings.city}
-                  onChange={(e) => setSettings({ ...settings, city: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  State
-                </label>
-                <input
-                  type="text"
-                  value={settings.state}
-                  onChange={(e) => setSettings({ ...settings, state: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Pincode
-                </label>
-                <input
-                  type="text"
-                  value={settings.pincode}
-                  onChange={(e) => setSettings({ ...settings, pincode: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Country
-                </label>
-                <input
-                  type="text"
-                  value={settings.country}
-                  onChange={(e) => setSettings({ ...settings, country: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                    {settings.favicon_url ? (
+                      <img src={settings.favicon_url} alt="Favicon" className="w-10 h-10 object-contain" />
+                    ) : (
+                      <span className="text-xs text-slate-400">No Favicon</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-semibold text-xs rounded-xl cursor-pointer transition">
+                      <Upload size={14} />
+                      {uploadingFavicon ? 'Uploading...' : 'Upload Favicon'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'favicon')}
+                        disabled={uploadingFavicon}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[10px] text-slate-400 mt-2">Recommended: 32x32px square PNG/ICO</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Shipping & Tax */}
+      {/* Shipping and Rules */}
       {tab === 'shipping' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6"
-        >
-          <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Truck size={20} className="text-blue-500" />
-            Shipping & Tax Configuration
-          </h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Shipping Fee (₹)
-              </label>
-              <input
-                type="number"
-                value={settings.shipping_fee}
-                onChange={(e) => setSettings({ ...settings, shipping_fee: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                min={0}
-              />
-              <p className="text-xs text-slate-400 mt-1">Standard delivery charge</p>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Free Shipping Above (₹)
-              </label>
-              <input
-                type="number"
-                value={settings.free_shipping_threshold}
-                onChange={(e) => setSettings({ ...settings, free_shipping_threshold: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                min={0}
-              />
-              <p className="text-xs text-slate-400 mt-1">Orders above this get free shipping</p>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Tax Rate (%)
-              </label>
-              <input
-                type="number"
-                value={settings.tax_rate}
-                onChange={(e) => setSettings({ ...settings, tax_rate: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                min={0}
-                max={100}
-                step={0.5}
-              />
-              <p className="text-xs text-slate-400 mt-1">GST applied on orders</p>
-            </div>
-          </div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-150 p-6 shadow-sm space-y-6">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Truck size={20} className="text-[#e94560]" />
+              Shipping Config
+            </h3>
+            
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Shipping Charge (₹)
+                </label>
+                <input
+                  type="number"
+                  value={settings.shipping_charge}
+                  onChange={(e) => setSettings({ ...settings, shipping_charge: Number(e.target.value) })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                  min="0"
+                />
+                <p className="text-[11px] text-slate-400">Fee charged on order shipments below threshold.</p>
+              </div>
 
-          {/* Preview Card */}
-          <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Preview</p>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Cart Total ₹800</span>
-                <span className="text-slate-400">+ ₹{settings.shipping_fee} shipping</span>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Free Shipping Threshold (₹)
+                </label>
+                <input
+                  type="number"
+                  value={settings.free_shipping_threshold}
+                  onChange={(e) => setSettings({ ...settings, free_shipping_threshold: Number(e.target.value) })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                  min="0"
+                />
+                <p className="text-[11px] text-slate-400">Order total amount needed to qualify for free shipping.</p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Cart Total ₹{settings.free_shipping_threshold}+</span>
-                <span className="text-emerald-600 font-semibold">Free Shipping ✓</span>
-              </div>
-              <div className="flex justify-between border-t border-slate-200 pt-2">
-                <span className="text-slate-500">Tax on ₹1,000</span>
-                <span className="text-slate-700 font-semibold">
-                  ₹{((1000 * settings.tax_rate) / 100).toFixed(0)} ({settings.tax_rate}%)
-                </span>
+            </div>
+
+            {/* Preview Banner */}
+            <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 border border-slate-100 flex items-start gap-2.5">
+              <span className="text-lg">💡</span>
+              <div>
+                <p className="font-semibold text-slate-800">Dynamic Rules Active</p>
+                <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">
+                  Cart totals under <strong className="text-slate-700">₹{settings.free_shipping_threshold}</strong> will have a <strong className="text-slate-700">₹{settings.shipping_charge}</strong> delivery fee applied automatically. Server computes this during checkout to prevent client-side hacks.
+                </p>
               </div>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Banners */}
-      {tab === 'banners' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          {/* Add Banner */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <div className="flex items-center justify-between mb-4">
+      {/* Announcement Bar */}
+      {tab === 'announcement' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-150 p-6 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <ImageIcon size={20} className="text-blue-500" />
-                Home Banners
+                <Megaphone size={20} className="text-[#e94560]" />
+                Announcement Bar Configuration
+              </h3>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.announcement_enabled}
+                  onChange={(e) => setSettings({ ...settings, announcement_enabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#e94560]"></div>
+                <span className="ml-2 text-xs font-semibold text-slate-600 uppercase">Enable</span>
+              </label>
+            </div>
+
+            {settings.announcement_enabled && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Announcement Marquee Text
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.announcement_text}
+                    onChange={(e) => setSettings({ ...settings, announcement_text: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                    placeholder="Enter announcement..."
+                  />
+                </div>
+
+                <div className="grid sm:grid-cols-3 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Marquee Speed (seconds)
+                    </label>
+                    <input
+                      type="number"
+                      value={settings.announcement_speed}
+                      onChange={(e) => setSettings({ ...settings, announcement_speed: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      min="5"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Lower is faster (time to scroll across screen).</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Background Color
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.announcement_bg}
+                        onChange={(e) => setSettings({ ...settings, announcement_bg: e.target.value })}
+                        className="w-10 h-10 border border-slate-200 rounded-lg cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={settings.announcement_bg}
+                        onChange={(e) => setSettings({ ...settings, announcement_bg: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-[#e94560]/20 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Text Color
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={settings.announcement_fg}
+                        onChange={(e) => setSettings({ ...settings, announcement_fg: e.target.value })}
+                        className="w-10 h-10 border border-slate-200 rounded-lg cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={settings.announcement_fg}
+                        onChange={(e) => setSettings({ ...settings, announcement_fg: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-[#e94560]/20 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Announcement Bar Live Preview */}
+                <div className="border border-slate-100 rounded-xl p-3 bg-slate-50 space-y-2">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Live Preview</p>
+                  <div
+                    style={{ backgroundColor: settings.announcement_bg, color: settings.announcement_fg }}
+                    className="p-3.5 text-center text-xs font-bold rounded-lg overflow-hidden whitespace-nowrap relative border border-black/10"
+                  >
+                    <span className="inline-block animate-pulse">{settings.announcement_text}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Offer / Promotion Strip */}
+      {tab === 'promo' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-150 p-6 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Palette size={20} className="text-[#e94560]" />
+                Homepage Promotion Banner Strip
+              </h3>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.offer_section_enabled}
+                  onChange={(e) => setSettings({ ...settings, offer_section_enabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#e94560]"></div>
+                <span className="ml-2 text-xs font-semibold text-slate-600 uppercase">Enable</span>
+              </label>
+            </div>
+
+            {settings.offer_section_enabled && (
+              <div className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Promo Title
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.offer_title || ''}
+                      onChange={(e) => setSettings({ ...settings, offer_title: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="e.g. Special Collection Offer"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Promo Subtitle / Description
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.offer_subtitle || ''}
+                      onChange={(e) => setSettings({ ...settings, offer_subtitle: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="e.g. Get up to 50% off on newly arrived items"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      CTA Button Text
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.offer_cta_text || ''}
+                      onChange={(e) => setSettings({ ...settings, offer_cta_text: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="e.g. Shop Sale"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      CTA Link URL / Path
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.offer_cta_link || ''}
+                      onChange={(e) => setSettings({ ...settings, offer_cta_link: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="e.g. /shop?filter=sale"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Social Links & Footer */}
+      {tab === 'social' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-150 p-6 shadow-sm space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Globe size={20} className="text-[#e94560]" />
+                Footer & Social Settings
+              </h3>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.social_enabled}
+                  onChange={(e) => setSettings({ ...settings, social_enabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#e94560]"></div>
+                <span className="ml-2 text-xs font-semibold text-slate-600 uppercase">Enable</span>
+              </label>
+            </div>
+
+            {settings.social_enabled && (
+              <div className="space-y-5">
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Instagram Profile URL
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.instagram_url || ''}
+                      onChange={(e) => setSettings({ ...settings, instagram_url: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="https://instagram.com/yourprofile"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Facebook Page URL
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.facebook_url || ''}
+                      onChange={(e) => setSettings({ ...settings, facebook_url: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="https://facebook.com/yourpage"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      WhatsApp Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.whatsapp_number || ''}
+                      onChange={(e) => setSettings({ ...settings, whatsapp_number: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="e.g. 919876543210 (include country code, digits only)"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      WhatsApp Pre-filled Message
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.whatsapp_message || ''}
+                      onChange={(e) => setSettings({ ...settings, whatsapp_message: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-[#e94560]/20 focus:border-[#e94560] outline-none transition"
+                      placeholder="Hi, I am interested in your fashion collections"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Hero Banners */}
+      {tab === 'banners' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-150 p-6 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-6">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <ImageIcon size={20} className="text-[#e94560]" />
+                Home hero Carousel Banners
               </h3>
               <button
                 onClick={() => setAddingBanner(!addingBanner)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center gap-2 bg-[#1a1a2e] hover:bg-[#e94560] text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
               >
                 {addingBanner ? <X size={14} /> : <Plus size={14} />}
                 {addingBanner ? 'Cancel' : 'Add Banner'}
@@ -503,41 +751,71 @@ export default function AdminSettingsPage() {
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="border border-slate-200 rounded-xl p-4 mb-4 space-y-3"
+                className="border border-slate-200 rounded-xl p-4 mb-6 space-y-4 bg-slate-50"
               >
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Banner Title"
-                    value={bannerForm.title}
-                    onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
-                    className="px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Subtitle (optional)"
-                    value={bannerForm.subtitle}
-                    onChange={(e) => setBannerForm({ ...bannerForm, subtitle: e.target.value })}
-                    className="px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  />
-                  <input
-                    type="url"
-                    placeholder="Image URL *"
-                    value={bannerForm.image_url}
-                    onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
-                    className="px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Link URL (optional)"
-                    value={bannerForm.link}
-                    onChange={(e) => setBannerForm({ ...bannerForm, link: e.target.value })}
-                    className="px-4 py-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  />
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Banner Title *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Summer Collection"
+                      value={bannerForm.title}
+                      onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Subtitle</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Flat 20% off"
+                      value={bannerForm.subtitle}
+                      onChange={(e) => setBannerForm({ ...bannerForm, subtitle: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none bg-white"
+                    />
+                  </div>
                 </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Destination URL Path</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. /shop?filter=new"
+                      value={bannerForm.link}
+                      onChange={(e) => setBannerForm({ ...bannerForm, link: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none bg-white"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Banner Image *</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Image URL or upload a file"
+                        value={bannerForm.image_url}
+                        onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none bg-white"
+                      />
+                      <label className="inline-flex items-center gap-1.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer shrink-0 transition">
+                        <Upload size={14} />
+                        {uploadingBanner ? '...' : 'Upload'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, 'banner')}
+                          disabled={uploadingBanner}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   onClick={addBanner}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  className="bg-[#1a1a2e] hover:bg-[#e94560] text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
                 >
                   Save Banner
                 </button>
@@ -555,17 +833,16 @@ export default function AdminSettingsPage() {
                 {banners.map((banner) => (
                   <div
                     key={banner.id}
-                    className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition"
+                    className="flex items-center gap-4 p-3.5 rounded-xl border border-slate-150 hover:border-slate-200 transition bg-white"
                   >
-                    <GripVertical size={16} className="text-slate-300 cursor-grab shrink-0" />
                     {banner.image_url ? (
                       <img
                         src={banner.image_url}
                         alt={banner.title}
-                        className="w-20 h-12 rounded-lg object-cover border border-slate-200 shrink-0"
+                        className="w-24 h-14 rounded-lg object-cover border border-slate-200 shrink-0"
                       />
                     ) : (
-                      <div className="w-20 h-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                      <div className="w-24 h-14 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
                         <ImageIcon size={16} className="text-slate-400" />
                       </div>
                     )}
@@ -595,93 +872,6 @@ export default function AdminSettingsPage() {
                 ))}
               </div>
             )}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Appearance */}
-      {tab === 'appearance' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6"
-        >
-          <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Palette size={20} className="text-blue-500" />
-            Brand Colors
-          </h3>
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Primary Color
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={settings.primary_color}
-                  onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                  className="w-12 h-12 rounded-xl border border-slate-200 cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={settings.primary_color}
-                  onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Used for headers, buttons, and primary elements</p>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Accent Color
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={settings.accent_color}
-                  onChange={(e) => setSettings({ ...settings, accent_color: e.target.value })}
-                  className="w-12 h-12 rounded-xl border border-slate-200 cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={settings.accent_color}
-                  onChange={(e) => setSettings({ ...settings, accent_color: e.target.value })}
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Used for CTAs, sale badges, and highlights</p>
-            </div>
-          </div>
-
-          {/* Color Preview */}
-          <div className="mt-6 p-5 rounded-xl border border-slate-100">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Preview</p>
-            <div className="flex items-center gap-4 flex-wrap">
-              <button
-                style={{ backgroundColor: settings.primary_color }}
-                className="text-white px-6 py-3 rounded-xl font-semibold text-sm"
-              >
-                Primary Button
-              </button>
-              <button
-                style={{ backgroundColor: settings.accent_color }}
-                className="text-white px-6 py-3 rounded-xl font-semibold text-sm"
-              >
-                Accent Button
-              </button>
-              <div
-                style={{ background: `linear-gradient(135deg, ${settings.primary_color}, ${settings.accent_color})` }}
-                className="text-white px-6 py-3 rounded-xl font-semibold text-sm"
-              >
-                Gradient
-              </div>
-              <div
-                style={{ borderColor: settings.primary_color, color: settings.primary_color }}
-                className="border-2 px-6 py-3 rounded-xl font-semibold text-sm"
-              >
-                Outlined
-              </div>
-            </div>
           </div>
         </motion.div>
       )}

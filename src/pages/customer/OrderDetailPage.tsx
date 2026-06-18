@@ -154,7 +154,7 @@ export default function OrderDetailPage() {
         </h2>
         <div className="space-y-4">
           {items.map((item: any) => {
-            const img = item.product?.images?.[0]?.url
+            const img = item.product?.images?.[0]?.image_url
             return (
               <div key={item.id} className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
@@ -183,7 +183,7 @@ export default function OrderDetailPage() {
             <p className="text-sm font-medium text-gray-800">{address.full_name}</p>
             <p className="text-sm text-gray-600 mt-1 leading-relaxed">
               {address.address_line1}{address.address_line2 ? `, ${address.address_line2}` : ''},{' '}
-              {address.city}, {address.state} — {address.pincode}
+              {address.city}, {address.state} — {address.postal_code}
             </p>
             <p className="text-sm text-gray-500 mt-1">📞 {address.phone}</p>
           </div>
@@ -210,7 +210,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-2">
               <span>Total</span>
-              <span>₹{order.total_amount.toLocaleString('en-IN')}</span>
+              <span>₹{order.total.toLocaleString('en-IN')}</span>
             </div>
             <div className="flex justify-between text-gray-600 mt-2">
               <span>Payment Method</span>

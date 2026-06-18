@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, ShoppingBag, Package, Tag, Ticket,
   Users, Settings, ChevronLeft, Menu, LogOut,
-  ExternalLink, Bell
+  ExternalLink, Bell, HelpCircle
 } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
 import toast from 'react-hot-toast'
@@ -16,6 +16,7 @@ const navItems = [
   { label: 'Categories', href: '/admin/categories', icon: Tag },
   { label: 'Coupons', href: '/admin/coupons', icon: Ticket },
   { label: 'Users', href: '/admin/users', icon: Users },
+  { label: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 

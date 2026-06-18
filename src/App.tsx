@@ -27,6 +27,7 @@ const OrdersPage        = lazy(() => import('./pages/customer/OrdersPage'))
 const OrderDetailPage   = lazy(() => import('./pages/customer/OrderDetailPage'))
 const ProfilePage       = lazy(() => import('./pages/customer/ProfilePage'))
 const AuthPage          = lazy(() => import('./pages/customer/AuthPage'))
+const FAQPage           = lazy(() => import('./pages/customer/FAQPage'))
 
 // ─── Lazy-loaded Admin Pages ──────────────────────────────────────────────────
 const AdminOverviewPage   = lazy(() => import('./pages/admin/AdminOverviewPage'))
@@ -36,6 +37,7 @@ const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage
 const AdminCouponsPage    = lazy(() => import('./pages/admin/AdminCouponsPage'))
 const AdminUsersPage      = lazy(() => import('./pages/admin/AdminUsersPage'))
 const AdminSettingsPage   = lazy(() => import('./pages/admin/AdminSettingsPage'))
+const AdminFAQsPage       = lazy(() => import('./pages/admin/AdminFAQsPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -133,6 +135,7 @@ function AppContent() {
             <Route path="shop" element={<ShopPage />} />
             <Route path="product/:slug" element={<ProductDetailPage />} />
             <Route path="auth" element={<AuthPage />} />
+            <Route path="faq" element={<FAQPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="cart" element={<CartPage />} />
               <Route path="checkout" element={<CheckoutPage />} />
@@ -153,6 +156,7 @@ function AppContent() {
               <Route path="coupons" element={<AdminCouponsPage />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
+              <Route path="faqs" element={<AdminFAQsPage />} />
             </Route>
           </Route>
 
