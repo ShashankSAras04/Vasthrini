@@ -359,7 +359,6 @@ export default function ProductDetailPage() {
                     Size:{' '}
                     <span className="font-normal text-gray-500">{selectedSize || 'Select'}</span>
                   </p>
-                  <button type="button" className="text-xs text-[#e94560] underline">Size Guide</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {availableSizes.map(({ size, stock }) => (

@@ -27,21 +27,23 @@ const CheckoutPage      = lazy(() => import('./pages/customer/CheckoutPage'))
 const WishlistPage      = lazy(() => import('./pages/customer/WishlistPage'))
 const OrdersPage        = lazy(() => import('./pages/customer/OrdersPage'))
 const OrderDetailPage   = lazy(() => import('./pages/customer/OrderDetailPage'))
+const ComplaintsPage    = lazy(() => import('./pages/customer/ComplaintsPage'))
 const ProfilePage       = lazy(() => import('./pages/customer/ProfilePage'))
 const AuthPage          = lazy(() => import('./pages/customer/AuthPage'))
 const FAQPage           = lazy(() => import('./pages/customer/FAQPage'))
 const NotFoundPage      = lazy(() => import('./pages/customer/NotFoundPage'))
 
 // ─── Lazy-loaded Admin Pages ──────────────────────────────────────────────────
-const AdminOverviewPage   = lazy(() => import('./pages/admin/AdminOverviewPage'))
-const AdminProductsPage   = lazy(() => import('./pages/admin/AdminProductsPage'))
-const AdminOrdersPage     = lazy(() => import('./pages/admin/AdminOrdersPage'))
-const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage'))
-const AdminCouponsPage    = lazy(() => import('./pages/admin/AdminCouponsPage'))
-const AdminUsersPage      = lazy(() => import('./pages/admin/AdminUsersPage'))
-const AdminSettingsPage   = lazy(() => import('./pages/admin/AdminSettingsPage'))
-const AdminFAQsPage       = lazy(() => import('./pages/admin/AdminFAQsPage'))
-const AdminAnalyticsPage  = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
+const AdminOverviewPage    = lazy(() => import('./pages/admin/AdminOverviewPage'))
+const AdminProductsPage    = lazy(() => import('./pages/admin/AdminProductsPage'))
+const AdminOrdersPage      = lazy(() => import('./pages/admin/AdminOrdersPage'))
+const AdminCategoriesPage  = lazy(() => import('./pages/admin/AdminCategoriesPage'))
+const AdminCouponsPage     = lazy(() => import('./pages/admin/AdminCouponsPage'))
+const AdminUsersPage       = lazy(() => import('./pages/admin/AdminUsersPage'))
+const AdminSettingsPage    = lazy(() => import('./pages/admin/AdminSettingsPage'))
+const AdminFAQsPage        = lazy(() => import('./pages/admin/AdminFAQsPage'))
+const AdminAnalyticsPage   = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
+const AdminComplaintsPage  = lazy(() => import('./pages/admin/AdminComplaintsPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -150,6 +152,7 @@ function AppContent() {
               <Route path="wishlist" element={<WishlistPage />} />
               <Route path="orders" element={<OrdersPage />} />
               <Route path="orders/:id" element={<OrderDetailPage />} />
+              <Route path="complaints" element={<ComplaintsPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
           </Route>
@@ -166,6 +169,7 @@ function AppContent() {
               <Route path="settings" element={<AdminSettingsPage />} />
               <Route path="faqs" element={<AdminFAQsPage />} />
               <Route path="analytics" element={<AdminAnalyticsPage />} />
+              <Route path="complaints" element={<AdminComplaintsPage />} />
             </Route>
           </Route>
 

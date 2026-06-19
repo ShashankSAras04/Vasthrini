@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShoppingBag, Heart, User, Search, Menu, X, ChevronDown,
-  LogOut, Package, Shield
+  LogOut, Package, Shield, MessageSquare
 } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
 import { useCartStore } from '../store/useCartStore'
@@ -251,6 +251,13 @@ export default function CustomerLayout() {
                           >
                             <Package size={15} /> My Orders
                           </Link>
+                          <Link
+                            to="/complaints"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <MessageSquare size={15} /> My Complaints
+                          </Link>
                           {profile?.role === 'admin' && (
                             <Link
                               to="/admin"
@@ -430,13 +437,11 @@ export default function CustomerLayout() {
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Help</h4>
               <ul className="space-y-2.5">
-                {['Track Order', 'Size Guide', 'Contact Us'].map((item) => (
-                  <li key={item}>
-                    <span className="text-gray-400 text-sm cursor-pointer hover:text-white transition-colors">
-                      {item}
-                    </span>
-                  </li>
-                ))}
+                <li>
+                  <Link to="/complaints" className="text-gray-400 text-sm hover:text-white transition-colors">
+                    Raise a Complaint
+                  </Link>
+                </li>
                 <li>
                   <span
                     onClick={() => toast.error('No Returns Policy: All sales are final.', { duration: 5000 })}

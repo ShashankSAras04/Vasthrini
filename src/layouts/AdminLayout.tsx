@@ -4,21 +4,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, ShoppingBag, Package, Tag, Ticket,
   Users, Settings, ChevronLeft, Menu, LogOut,
-  ExternalLink, Bell, HelpCircle, Activity
+  ExternalLink, HelpCircle, Activity, MessageSquare
 } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
 import toast from 'react-hot-toast'
 
 const navItems = [
-  { label: 'Overview', href: '/admin', icon: LayoutDashboard, exact: true },
-  { label: 'Analytics', href: '/admin/analytics', icon: Activity },
-  { label: 'Products', href: '/admin/products', icon: ShoppingBag },
-  { label: 'Orders', href: '/admin/orders', icon: Package },
-  { label: 'Categories', href: '/admin/categories', icon: Tag },
-  { label: 'Coupons', href: '/admin/coupons', icon: Ticket },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+  { label: 'Overview',   href: '/admin',             icon: LayoutDashboard, exact: true },
+  { label: 'Analytics',  href: '/admin/analytics',   icon: Activity },
+  { label: 'Products',   href: '/admin/products',    icon: ShoppingBag },
+  { label: 'Orders',     href: '/admin/orders',      icon: Package },
+  { label: 'Complaints', href: '/admin/complaints',  icon: MessageSquare },
+  { label: 'Categories', href: '/admin/categories',  icon: Tag },
+  { label: 'Coupons',    href: '/admin/coupons',     icon: Ticket },
+  { label: 'Users',      href: '/admin/users',       icon: Users },
+  { label: 'FAQs',       href: '/admin/faqs',        icon: HelpCircle },
+  { label: 'Settings',   href: '/admin/settings',    icon: Settings },
 ]
 
 export default function AdminLayout() {
@@ -181,9 +182,6 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative p-2 rounded-lg text-gray-400 hover:bg-gray-800 transition-colors">
-              <Bell size={18} />
-            </button>
           </div>
         </header>
 

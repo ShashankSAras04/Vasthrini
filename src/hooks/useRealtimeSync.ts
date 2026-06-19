@@ -64,6 +64,13 @@ export function useRealtimeSync() {
           queryClient.invalidateQueries({ queryKey: ['order', (payload.new as any).id] })
         }
       })
+      // ── Complaints (customer sees admin replies live) ─────────────────────
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'complaints' }, (payload) => {
+        queryClient.invalidateQueries({ queryKey: ['complaints'] })
+        if (payload.new && typeof payload.new === 'object' && 'order_id' in payload.new) {
+          queryClient.invalidateQueries({ queryKey: ['order-complaints', (payload.new as any).order_id] })
+        }
+      })
       // ── Order items ───────────────────────────────────────────────────────
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, (payload) => {
         queryClient.invalidateQueries({ queryKey: ['orders'] })
