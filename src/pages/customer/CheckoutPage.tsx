@@ -14,15 +14,15 @@ import { useSettingsStore } from '../../store/useSettingsStore'
 import type { Address } from '../../types/database'
 
 const addressSchema = z.object({
-  label: z.string().min(1),
-  full_name: z.string().min(2),
-  phone: z.string().min(10),
-  address_line1: z.string().min(5),
+  label: z.string().min(1, 'Label is required'),
+  full_name: z.string().min(2, 'Name must be at least 2 characters'),
+  phone: z.string().length(10, 'Phone must be exactly 10 digits').regex(/^\d+$/, 'Digits only'),
+  address_line1: z.string().min(5, 'Address must be at least 5 characters'),
   address_line2: z.string().optional(),
-  city: z.string().min(2),
-  state: z.string().min(2),
-  country: z.string().min(1),
-  postal_code: z.string().min(6).max(6),
+  city: z.string().min(2, 'City must be at least 2 characters'),
+  state: z.string().min(2, 'State must be at least 2 characters'),
+  country: z.string().min(1, 'Country is required'),
+  postal_code: z.string().length(6, 'Pincode must be exactly 6 digits').regex(/^\d+$/, 'Digits only'),
 })
 type AddressForm = z.infer<typeof addressSchema>
 
@@ -70,10 +70,57 @@ export default function CheckoutPage() {
     }
   }, [addresses, selectedAddressId])
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<AddressForm>({
+  const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
     defaultValues: { country: 'India', label: 'Home' },
+    mode: 'onChange',
   })
+
+  const labelVal = watch('label') ?? '';
+  const fullNameVal = watch('full_name') ?? '';
+  const phoneVal = watch('phone') ?? '';
+  const addressLine1Val = watch('address_line1') ?? '';
+  const cityVal = watch('city') ?? '';
+  const stateVal = watch('state') ?? '';
+  const postalCodeVal = watch('postal_code') ?? '';
+
+  useEffect(() => {
+    if (phoneVal) {
+      const cleaned = phoneVal.replace(/\D/g, '').slice(0, 10);
+      if (cleaned !== phoneVal) {
+        setValue('phone', cleaned, { shouldValidate: true });
+      }
+    }
+  }, [phoneVal, setValue]);
+
+  useEffect(() => {
+    if (postalCodeVal) {
+      const cleaned = postalCodeVal.replace(/\D/g, '').slice(0, 6);
+      if (cleaned !== postalCodeVal) {
+        setValue('postal_code', cleaned, { shouldValidate: true });
+      }
+    }
+  }, [postalCodeVal, setValue]);
+
+  const getFieldClass = (fieldName: keyof AddressForm, value: string) => {
+    if (!value) return inputCls;
+    if (fieldName === 'phone') {
+      return value.length === 10
+        ? `${inputCls} border-green-500 ring-2 ring-green-500/20 text-green-700 focus:border-green-600 focus:ring-green-600/20`
+        : `${inputCls} border-red-500 ring-2 ring-red-500/20 text-red-700 focus:border-red-600 focus:ring-red-600/20`;
+    }
+    if (fieldName === 'postal_code') {
+      return value.length === 6
+        ? `${inputCls} border-green-500 ring-2 ring-green-500/20 text-green-700 focus:border-green-600 focus:ring-green-600/20`
+        : `${inputCls} border-red-500 ring-2 ring-red-500/20 text-red-700 focus:border-red-600 focus:ring-red-600/20`;
+    }
+    if (errors[fieldName]) {
+      return `${inputCls} border-red-500 ring-2 ring-red-500/20 text-red-700 focus:border-red-600 focus:ring-red-600/20`;
+    } else if (value && value.length >= (fieldName === 'address_line1' ? 5 : 2)) {
+      return `${inputCls} border-green-500 ring-2 ring-green-500/20 text-green-700 focus:border-green-600 focus:ring-green-600/20`;
+    }
+    return inputCls;
+  };
 
   const addAddressMutation = useMutation({
     mutationFn: async (values: AddressForm) => {
@@ -246,22 +293,26 @@ export default function CheckoutPage() {
                 >
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Label</label>
-                    <input {...register('label')} placeholder="Home / Office" className={inputCls} />
+                    <input {...register('label')} placeholder="Home / Office" className={getFieldClass('label', labelVal)} />
                     {errors.label && <p className={errorCls}>{errors.label.message}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Full Name</label>
-                    <input {...register('full_name')} placeholder="John Doe" className={inputCls} />
+                    <input {...register('full_name')} placeholder="John Doe" className={getFieldClass('full_name', fullNameVal)} />
                     {errors.full_name && <p className={errorCls}>{errors.full_name.message}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Phone</label>
-                    <input {...register('phone')} placeholder="9999999999" className={inputCls} />
-                    {errors.phone && <p className={errorCls}>{errors.phone.message}</p>}
+                    <input {...register('phone')} placeholder="9999999999" className={getFieldClass('phone', phoneVal)} maxLength={10} />
+                    {errors.phone ? (
+                      <p className={errorCls}>{errors.phone.message}</p>
+                    ) : phoneVal.length === 10 ? (
+                      <p className="text-xs text-green-600 mt-1 font-semibold">✓ 10 digits — Valid phone number</p>
+                    ) : null}
                   </div>
                   <div className="col-span-2">
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Address Line 1</label>
-                    <input {...register('address_line1')} placeholder="House/Flat No, Street" className={inputCls} />
+                    <input {...register('address_line1')} placeholder="House/Flat No, Street" className={getFieldClass('address_line1', addressLine1Val)} />
                     {errors.address_line1 && <p className={errorCls}>{errors.address_line1.message}</p>}
                   </div>
                   <div className="col-span-2">
@@ -270,18 +321,22 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">City</label>
-                    <input {...register('city')} placeholder="Mumbai" className={inputCls} />
+                    <input {...register('city')} placeholder="Mumbai" className={getFieldClass('city', cityVal)} />
                     {errors.city && <p className={errorCls}>{errors.city.message}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">State</label>
-                    <input {...register('state')} placeholder="Maharashtra" className={inputCls} />
+                    <input {...register('state')} placeholder="Maharashtra" className={getFieldClass('state', stateVal)} />
                     {errors.state && <p className={errorCls}>{errors.state.message}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Pincode</label>
-                     <input {...register('postal_code')} placeholder="400001" className={inputCls} maxLength={6} />
-                     {errors.postal_code && <p className={errorCls}>{errors.postal_code.message}</p>}
+                    <input {...register('postal_code')} placeholder="400001" className={getFieldClass('postal_code', postalCodeVal)} maxLength={6} />
+                    {errors.postal_code ? (
+                      <p className={errorCls}>{errors.postal_code.message}</p>
+                    ) : postalCodeVal.length === 6 ? (
+                      <p className="text-xs text-green-600 mt-1 font-semibold">✓ 6 digits — Valid pincode</p>
+                    ) : null}
                   </div>
                   <div className="flex items-end">
                     <button
