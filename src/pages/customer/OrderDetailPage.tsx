@@ -47,6 +47,8 @@ export default function OrderDetailPage() {
       return data as Order
     },
     enabled: !!id && !!user,
+    refetchInterval: 15000,           // Poll every 15s for live status updates
+    refetchIntervalInBackground: false,
   })
 
   if (isLoading) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Search, Clock, CheckCircle2, ChevronRight, X, Landmark, Truck, Save } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Order, OrderStatus, PaymentStatus } from '../../types/database'
@@ -11,6 +12,7 @@ interface OrderHistoryItem {
 }
 
 export default function AdminOrdersPage() {
+  const queryClient = useQueryClient()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -107,6 +109,9 @@ export default function AdminOrdersPage() {
       }
 
       toast.success('Order updated successfully')
+      // Explicitly invalidate React Query caches so customer pages update live
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['order', selectedOrder.id] })
       setSelectedOrder(null)
       loadOrders()
     } catch (err: any) {

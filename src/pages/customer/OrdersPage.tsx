@@ -38,6 +38,8 @@ export default function OrdersPage() {
       return data as Order[]
     },
     enabled: !!user,
+    refetchInterval: 30000,           // Fallback poll every 30s if realtime drops
+    refetchIntervalInBackground: false,
   })
 
   if (isLoading) {

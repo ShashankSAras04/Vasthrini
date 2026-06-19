@@ -46,7 +46,8 @@ const AdminAnalyticsPage  = lazy(() => import('./pages/admin/AdminAnalyticsPage'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
+      staleTime: 0,          // Always refetch when a realtime event invalidates a query
+      gcTime: 1000 * 60 * 5, // Keep unused data in cache for 5 min for fast navigation
       retry: 1,
     },
   },
