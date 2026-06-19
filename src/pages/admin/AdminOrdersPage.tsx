@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Search, Clock, CheckCircle2, ChevronRight, X, Landmark, Truck, Save } from 'lucide-react'
+import { Search, Clock, CheckCircle2, ChevronRight, X, Landmark, Truck, Save, MessageSquare, FileText } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Order, OrderStatus, PaymentStatus } from '../../types/database'
 import toast from 'react-hot-toast'
+import { jsPDF } from 'jspdf'
 
 interface OrderHistoryItem {
   status: string
@@ -30,6 +31,7 @@ export default function AdminOrdersPage() {
   const [adminNotes, setAdminNotes] = useState('')
   const [trackingNumber, setTrackingNumber] = useState('')
   const [remarks, setRemarks] = useState('')
+  const [whatsappPhone, setWhatsappPhone] = useState('')
   const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function AdminOrdersPage() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, profiles:user_id(first_name, last_name, email)')
+        .select('*, profiles:user_id(first_name, last_name, email), address:address_id(*)')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -60,6 +62,7 @@ export default function AdminOrdersPage() {
     setPaymentStatus(order.payment_status)
     setAdminNotes(order.notes || '')
     setTrackingNumber(order.tracking_number || '')
+    setWhatsappPhone((order as any).address?.phone || '')
     setRemarks('')
     setDetailLoading(true)
 
@@ -77,6 +80,193 @@ export default function AdminOrdersPage() {
       toast.error('Failed to load order items')
     } finally {
       setDetailLoading(false)
+    }
+  }
+
+  const sanitizePhoneNumber = (phone: string): string => {
+    const cleaned = phone.replace(/\D/g, '')
+    if (cleaned.length === 10) {
+      return `91${cleaned}`
+    }
+    return cleaned
+  }
+
+  const handleSendTextInvoice = () => {
+    if (!selectedOrder) return
+    const customerName = `${(selectedOrder as any).profiles?.first_name || ''} ${(selectedOrder as any).profiles?.last_name || ''}`.trim() || 'Valued Customer'
+    const addressObj = (selectedOrder as any).address
+    const addressStr = addressObj 
+      ? `${addressObj.address_line1}, ${addressObj.address_line2 ? addressObj.address_line2 + ', ' : ''}${addressObj.city}, ${addressObj.state} - ${addressObj.postal_code}`
+      : 'N/A'
+
+    const itemsText = orderItems.map(
+      (item) => `• ${item.product_name} (${item.size || 'N/A'}) x ${item.quantity} = INR ${item.total.toLocaleString('en-IN')}`
+    ).join('\n')
+
+    const discountText = selectedOrder.discount_amount > 0 
+      ? `🏷️ *Discount:* - INR ${selectedOrder.discount_amount.toLocaleString('en-IN')}\n` 
+      : ''
+
+    const invoiceText = `🧾 *INVOICE: Order #${selectedOrder.order_number}*
+---------------------------------------
+📅 *Date:* ${new Date(selectedOrder.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+👤 *Customer:* ${customerName}
+📍 *Shipping Address:* ${addressStr}
+
+🛍️ *ITEMS:*
+${itemsText}
+
+---------------------------------------
+💵 *Subtotal:* INR ${selectedOrder.subtotal.toLocaleString('en-IN')}
+${discountText}🚚 *Shipping:* INR ${selectedOrder.shipping_charge.toLocaleString('en-IN')}
+💰 *Total Amount:* INR ${selectedOrder.total.toLocaleString('en-IN')}
+💳 *Payment Method:* ${selectedOrder.payment_method.toUpperCase()}
+⚡ *Payment Status:* ${selectedOrder.payment_status.toUpperCase()}
+---------------------------------------
+Thank you for shopping with *Vasthrini*!
+`
+    const phone = sanitizePhoneNumber(whatsappPhone)
+    if (!phone) {
+      toast.error('Please provide a valid WhatsApp phone number')
+      return
+    }
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(invoiceText)}`
+    window.open(url, '_blank')
+  }
+
+  const handleSendPdfInvoice = () => {
+    if (!selectedOrder) return
+    const customerName = `${(selectedOrder as any).profiles?.first_name || ''} ${(selectedOrder as any).profiles?.last_name || ''}`.trim() || 'Valued Customer'
+    const addressObj = (selectedOrder as any).address
+    const addressStr = addressObj 
+      ? `${addressObj.address_line1}, ${addressObj.address_line2 ? addressObj.address_line2 + ', ' : ''}${addressObj.city}, ${addressObj.state} - ${addressObj.postal_code}`
+      : 'N/A'
+
+    const phone = sanitizePhoneNumber(whatsappPhone)
+    if (!phone) {
+      toast.error('Please provide a valid WhatsApp phone number')
+      return
+    }
+
+    try {
+      const doc = new jsPDF()
+
+      // Brand/Header
+      doc.setFillColor(26, 26, 46) // Dark blue background for header
+      doc.rect(0, 0, 210, 40, 'F')
+
+      doc.setFont('Helvetica', 'bold')
+      doc.setFontSize(24)
+      doc.setTextColor(255, 255, 255)
+      doc.text('VASTHRINI', 20, 26)
+
+      doc.setFont('Helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(200, 200, 200)
+      doc.text('Premium Fashion Store', 20, 33)
+
+      doc.setFont('Helvetica', 'bold')
+      doc.setFontSize(16)
+      doc.setTextColor(255, 255, 255)
+      doc.text('INVOICE', 150, 26)
+
+      // Invoice metadata
+      doc.setFont('Helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(220, 220, 220)
+      doc.text(`Order: #${selectedOrder.order_number}`, 150, 33)
+
+      // Reset text color to dark slate
+      doc.setTextColor(51, 65, 85)
+
+      // Invoice info block (Bill to / Ship to)
+      doc.setFont('Helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.text('Customer Details', 20, 52)
+      doc.setFont('Helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.text(`Name: ${customerName}`, 20, 58)
+      doc.text(`Email: ${(selectedOrder as any).profiles?.email || 'N/A'}`, 20, 64)
+      doc.text(`Phone: ${whatsappPhone || 'N/A'}`, 20, 70)
+
+      doc.setFont('Helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.text('Shipping Address', 110, 52)
+      doc.setFont('Helvetica', 'normal')
+      doc.setFontSize(9)
+      const splitAddress = doc.splitTextToSize(addressStr, 80)
+      doc.text(splitAddress, 110, 58)
+
+      // Items table header
+      let y = 85
+      doc.setFillColor(248, 250, 252) // Light bg
+      doc.rect(20, y, 170, 8, 'F')
+      doc.setFont('Helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.text('Item Description', 22, y + 5)
+      doc.text('Size', 100, y + 5)
+      doc.text('Qty', 125, y + 5)
+      doc.text('Price', 145, y + 5)
+      doc.text('Total', 170, y + 5)
+
+      doc.setDrawColor(226, 232, 240)
+      doc.line(20, y + 8, 190, y + 8)
+
+      y += 14
+      doc.setFont('Helvetica', 'normal')
+      orderItems.forEach((item) => {
+        doc.text(item.product_name, 22, y)
+        doc.text(item.size || 'N/A', 100, y)
+        doc.text(item.quantity.toString(), 125, y)
+        const unitPrice = item.total / item.quantity
+        doc.text(`INR ${unitPrice.toLocaleString('en-IN')}`, 145, y)
+        doc.text(`INR ${item.total.toLocaleString('en-IN')}`, 170, y)
+        y += 8
+      })
+
+      doc.line(20, y - 2, 190, y - 2)
+
+      // Subtotals & totals
+      y += 6
+      doc.setFont('Helvetica', 'normal')
+      doc.text('Subtotal:', 120, y)
+      doc.text(`INR ${selectedOrder.subtotal.toLocaleString('en-IN')}`, 170, y)
+
+      if (selectedOrder.discount_amount > 0) {
+        y += 6
+        doc.text('Discount:', 120, y)
+        doc.text(`- INR ${selectedOrder.discount_amount.toLocaleString('en-IN')}`, 170, y)
+      }
+
+      y += 6
+      doc.text('Shipping:', 120, y)
+      doc.text(`INR ${selectedOrder.shipping_charge.toLocaleString('en-IN')}`, 170, y)
+
+      y += 8
+      doc.setFont('Helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.text('Total Amount:', 120, y)
+      doc.text(`INR ${selectedOrder.total.toLocaleString('en-IN')}`, 170, y)
+
+      // Footer thank you note
+      y += 20
+      doc.setFont('Helvetica', 'italic')
+      doc.setFontSize(9)
+      doc.setTextColor(148, 163, 184)
+      doc.text('Thank you for shopping with Vasthrini!', 20, y)
+      doc.text('This is a computer-generated invoice, no signature is required.', 20, y + 5)
+
+      doc.save(`Invoice-${selectedOrder.order_number}.pdf`)
+      toast.success('Invoice PDF downloaded successfully!')
+
+      // Redirect to WhatsApp
+      const message = `Hello! Please find attached the PDF invoice for your order #${selectedOrder.order_number}. Thank you for shopping with Vasthrini!`
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+      window.open(url, '_blank')
+
+    } catch (pdfErr) {
+      console.error(pdfErr)
+      toast.error('Failed to generate PDF')
     }
   }
 
@@ -347,6 +537,45 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* WhatsApp Invoice Panel */}
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Share Invoice via WhatsApp</h4>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Actions</span>
+                </div>
+                
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">WhatsApp Contact Number</label>
+                  <input
+                    type="text"
+                    value={whatsappPhone}
+                    onChange={(e) => setWhatsappPhone(e.target.value)}
+                    placeholder="Enter customer WhatsApp number"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-slate-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleSendTextInvoice}
+                    className="flex items-center justify-center gap-2 py-3 bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold rounded-xl transition border border-teal-100 cursor-pointer text-sm"
+                  >
+                    <MessageSquare size={16} />
+                    Send Text Invoice
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSendPdfInvoice}
+                    className="flex items-center justify-center gap-2 py-3 bg-rose-50 hover:bg-rose-100 text-[#e94560] font-bold rounded-xl transition border border-rose-100 cursor-pointer text-sm"
+                  >
+                    <FileText size={16} />
+                    Send PDF Invoice
+                  </button>
+                </div>
               </div>
 
               {/* Status form fields */}
