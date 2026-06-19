@@ -124,7 +124,7 @@ export default function AdminAnalyticsPage() {
           product_id,
           product_name,
           quantity,
-          subtotal,
+          total,
           product:products(
             images:product_images(*)
           )

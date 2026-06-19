@@ -9,7 +9,8 @@ import { jsPDF } from 'jspdf'
 interface OrderHistoryItem {
   status: string
   remarks: string | null
-  created_at: string
+  created_at?: string
+  changed_at?: string
 }
 
 export default function AdminOrdersPage() {
@@ -660,7 +661,11 @@ Thank you for shopping with *Vasthrini*!
                       <div>
                         <p className="font-bold text-slate-900 uppercase">{history.status}</p>
                         {history.remarks && <p className="text-slate-500 mt-0.5 font-medium">{history.remarks}</p>}
-                        <p className="text-[10px] text-slate-400 mt-0.5">{new Date(history.created_at).toLocaleString()}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {history.changed_at || history.created_at 
+                            ? new Date(history.changed_at || history.created_at || '').toLocaleString('en-IN') 
+                            : 'N/A'}
+                        </p>
                       </div>
                     </div>
                   ))}
