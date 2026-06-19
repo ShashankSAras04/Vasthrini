@@ -55,7 +55,17 @@ export function useRealtimeSync() {
           queryClient.invalidateQueries({ queryKey: ['coupons'] })
         }
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('⚡ Supabase Realtime: Subscribed successfully to database changes.')
+        } else if (status === 'CLOSED') {
+          console.log('⚡ Supabase Realtime: Connection closed.')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('⚡ Supabase Realtime: Channel subscription error:', err)
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⚡ Supabase Realtime: Subscription timed out.')
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel).catch(console.error)

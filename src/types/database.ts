@@ -168,6 +168,9 @@ export interface OrderItem {
   unit_price: number
   quantity: number
   subtotal: number
+  total: number
+  price?: number
+  size?: string
   created_at: string
   // Joined
   variant?: ProductVariant

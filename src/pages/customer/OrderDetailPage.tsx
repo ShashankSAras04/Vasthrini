@@ -181,10 +181,10 @@ export default function OrderDetailPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 text-sm line-clamp-1">{item.product_name}</p>
-                  <p className="text-xs text-gray-500">{item.variant_label} × {item.quantity}</p>
+                  <p className="text-xs text-gray-500">{item.variant_label || `Size: ${item.size || ''}`} × {item.quantity}</p>
                 </div>
                 <p className="font-semibold text-gray-900 text-sm">
-                  ₹{item.subtotal.toLocaleString('en-IN')}
+                  ₹{(item.total ?? item.subtotal ?? 0).toLocaleString('en-IN')}
                 </p>
               </div>
             )

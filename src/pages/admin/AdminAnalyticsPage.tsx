@@ -155,7 +155,7 @@ export default function AdminAnalyticsPage() {
           }
         }
         productsMap[pid].quantity += item.quantity || 0
-        productsMap[pid].revenue += item.subtotal || 0
+        productsMap[pid].revenue += (item.total ?? item.subtotal ?? 0)
       })
 
       const aggregatedProducts: TopProduct[] = Object.keys(productsMap).map(pid => {
