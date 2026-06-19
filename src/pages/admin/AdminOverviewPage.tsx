@@ -36,7 +36,7 @@ interface RecentOrder {
   order_number: string
   created_at: string
   total: number
-  order_status: string
+  status: string
   profiles: {
     first_name: string
     last_name: string
@@ -46,6 +46,8 @@ interface RecentOrder {
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+  const [salesTrend, setSalesTrend] = useState<{ label: string; value: number }[]>([])
+  const [pctChange, setPctChange] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -60,6 +62,66 @@ export default function AdminOverviewPage() {
       if (statsError) throw statsError
       setStats(statsData)
 
+      // Fetch sales trend for the last 7 days
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      
+      const { data: trendData, error: trendError } = await supabase
+        .from('orders')
+        .select('created_at, total, status')
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: true })
+
+      if (trendError) throw trendError
+
+      // Fetch previous 7 days to calculate percentage change
+      const fDaysAgo = new Date()
+      fDaysAgo.setDate(fDaysAgo.getDate() - 14)
+
+      const { data: prevTrendData, error: prevTrendError } = await supabase
+        .from('orders')
+        .select('created_at, total, status')
+        .gte('created_at', fDaysAgo.toISOString())
+        .lt('created_at', sevenDaysAgo.toISOString())
+
+      if (prevTrendError) throw prevTrendError
+
+      const last7Days = Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date()
+        d.setDate(d.getDate() - (6 - i))
+        return d
+      })
+
+      const formattedTrend = last7Days.map(date => {
+        const dateStr = date.toDateString()
+        const totalSales = (trendData || [])
+          .filter(order => {
+            const orderDate = new Date(order.created_at)
+            return orderDate.toDateString() === dateStr && order.status !== 'cancelled'
+          })
+          .reduce((sum, order) => sum + (order.total || 0), 0)
+
+        return {
+          label: date.toLocaleDateString('en-IN', { weekday: 'short' }),
+          value: totalSales
+        }
+      })
+
+      setSalesTrend(formattedTrend)
+
+      const current7DaySales = formattedTrend.reduce((sum, d) => sum + d.value, 0)
+      const prev7DaySales = (prevTrendData || [])
+        .filter(order => order.status !== 'cancelled')
+        .reduce((sum, order) => sum + (order.total || 0), 0)
+
+      let change = 0
+      if (prev7DaySales > 0) {
+        change = Math.round(((current7DaySales - prev7DaySales) / prev7DaySales) * 100)
+      } else if (current7DaySales > 0) {
+        change = 100
+      }
+      setPctChange(change)
+
       // Fetch 5 recent orders
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
@@ -68,7 +130,7 @@ export default function AdminOverviewPage() {
           order_number,
           created_at,
           total,
-          order_status,
+          status,
           profiles:user_id(first_name, last_name)
         `)
         .order('created_at', { ascending: false })
@@ -164,43 +226,69 @@ export default function AdminOverviewPage() {
               <h3 className="font-bold text-slate-900 text-lg">Sales Trend</h3>
               <p className="text-xs text-slate-500">Visual visualization of sales transactions</p>
             </div>
-            <span className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 font-bold px-2.5 py-1 rounded-full">
-              <TrendingUp size={14} />
-              +14% this week
+            <span className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
+              pctChange >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'
+            }`}>
+              <TrendingUp size={14} className={pctChange < 0 ? 'rotate-180' : ''} />
+              {pctChange >= 0 ? `+${pctChange}%` : `${pctChange}%`} this week
             </span>
           </div>
 
           {/* Simple Visual SVG Chart */}
-          <div className="h-64 flex items-end justify-between px-2 pt-6 relative border-b border-l border-slate-100">
-            {/* Grid Lines */}
-            <div className="absolute left-0 right-0 top-1/4 border-t border-slate-50 pointer-events-none"></div>
-            <div className="absolute left-0 right-0 top-2/4 border-t border-slate-50 pointer-events-none"></div>
-            <div className="absolute left-0 right-0 top-3/4 border-t border-slate-50 pointer-events-none"></div>
-
-            <svg className="absolute inset-x-0 bottom-0 h-48 w-full text-blue-500/10" preserveAspectRatio="none">
-              <path
-                d="M0 150 C100 120, 200 40, 300 90 C400 120, 500 20, 600 0 L600 200 L0 200 Z"
-                fill="currentColor"
-              />
-              <path
-                d="M0 150 C100 120, 200 40, 300 90 C400 120, 500 20, 600 0"
-                fill="none"
-                stroke="rgb(59 130 246)"
-                strokeWidth="3"
-              />
-            </svg>
-
-            {/* Labels */}
-            <div className="absolute bottom-[-24px] left-0 right-0 flex justify-between px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              <span>Mon</span>
-              <span>Tue</span>
-              <span>Wed</span>
-              <span>Thu</span>
-              <span>Fri</span>
-              <span>Sat</span>
-              <span>Sun</span>
+          {salesTrend.length === 0 || salesTrend.every(s => s.value === 0) ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center w-full border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                <ShoppingBag size={20} />
+              </div>
+              <p className="text-sm font-semibold text-slate-900 font-outfit">No sales yet</p>
+              <p className="text-xs text-slate-400 mt-1">Once orders are placed, your sales trend will appear here.</p>
             </div>
-          </div>
+          ) : (
+            <div className="h-64 flex items-end justify-between px-2 pt-6 relative border-b border-l border-slate-100 w-full">
+              {/* Grid Lines */}
+              <div className="absolute left-0 right-0 top-1/4 border-t border-slate-50 pointer-events-none"></div>
+              <div className="absolute left-0 right-0 top-2/4 border-t border-slate-50 pointer-events-none"></div>
+              <div className="absolute left-0 right-0 top-3/4 border-t border-slate-50 pointer-events-none"></div>
+
+              {(() => {
+                const maxVal = Math.max(...salesTrend.map(d => d.value), 100);
+                const points = salesTrend.map((d, i) => {
+                  const x = (i / 6) * 100; // use percentage for SVG viewBox coordinates
+                  const y = 100 - (d.value / maxVal) * 80 - 10; // leave padding
+                  return { x, y, val: d.value };
+                });
+                const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                const areaPath = `${linePath} L 100 100 L 0 100 Z`;
+
+                return (
+                  <>
+                    <svg className="absolute inset-0 h-full w-full text-blue-500/10" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <path d={areaPath} fill="currentColor" />
+                      <path d={linePath} fill="none" stroke="rgb(59 130 246)" strokeWidth="2" />
+                    </svg>
+                    {/* Tooltips or data points on hover */}
+                    <div className="absolute inset-x-0 inset-y-0 flex justify-between px-2 pt-6 pointer-events-none z-10">
+                      {points.map((p, i) => (
+                        <div key={i} className="flex flex-col items-center justify-end h-full group pointer-events-auto" style={{ width: '40px' }}>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[9px] rounded px-1.5 py-0.5 mb-1 z-20 whitespace-nowrap shadow-lg">
+                            ₹{p.val.toLocaleString('en-IN')}
+                          </div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full border border-white shadow opacity-0 group-hover:opacity-100 transition-opacity mb-4" />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+
+              {/* Labels */}
+              <div className="absolute bottom-[-24px] left-0 right-0 flex justify-between px-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                {salesTrend.map((d, i) => (
+                  <span key={i}>{d.label}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Store Health / Quick Actions */}
@@ -294,17 +382,17 @@ export default function AdminOverviewPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        order.order_status === 'delivered'
+                        order.status === 'delivered'
                           ? 'bg-emerald-50 text-emerald-700'
-                          : order.order_status === 'pending'
+                          : order.status === 'pending'
                           ? 'bg-amber-50 text-amber-700'
-                          : order.order_status === 'cancelled'
+                          : order.status === 'cancelled'
                           ? 'bg-rose-50 text-rose-700'
                           : 'bg-blue-50 text-blue-700'
                       }`}>
-                        {order.order_status === 'pending' && <Clock size={12} />}
-                        {order.order_status === 'delivered' && <CheckCircle2 size={12} />}
-                        {order.order_status.toUpperCase()}
+                        {order.status === 'pending' && <Clock size={12} />}
+                        {order.status === 'delivered' && <CheckCircle2 size={12} />}
+                        {order.status.toUpperCase()}
                       </span>
                     </td>
                   </tr>

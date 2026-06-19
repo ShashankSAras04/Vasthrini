@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useCartStore } from '../../store/useCartStore'
+import { useSettingsStore } from '../../store/useSettingsStore'
 import type { Address } from '../../types/database'
 
 const addressSchema = z.object({
@@ -25,21 +26,16 @@ const addressSchema = z.object({
 })
 type AddressForm = z.infer<typeof addressSchema>
 
-const PAYMENT_METHODS = [
-  { id: 'cod', label: 'Cash on Delivery', icon: '💵' },
-  { id: 'upi', label: 'UPI Payment', icon: '📱' },
-  { id: 'bank_transfer', label: 'Bank Transfer', icon: '🏦' },
-]
-
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { items, getTotalPrice, clearCart, appliedCoupon } = useCartStore()
+  const { settings } = useSettingsStore()
 
   const [step, setStep] = useState<'address' | 'payment'>('address')
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
   const [showNewAddress, setShowNewAddress] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<string>('cod')
+  const [whatsappNumber, setWhatsappNumber] = useState('')
   const [placing, setPlacing] = useState(false)
 
   const { data: addresses, refetch: refetchAddresses } = useQuery<Address[]>({
@@ -55,6 +51,16 @@ export default function CheckoutPage() {
     },
     enabled: !!user,
   })
+
+  // Sync WhatsApp number with selected address phone
+  useEffect(() => {
+    if (selectedAddressId && addresses) {
+      const selectedAddr = addresses.find((a) => a.id === selectedAddressId)
+      if (selectedAddr) {
+        setWhatsappNumber(selectedAddr.phone)
+      }
+    }
+  }, [selectedAddressId, addresses])
 
   // Watch addresses and set default selected address
   useEffect(() => {
@@ -95,11 +101,15 @@ export default function CheckoutPage() {
       ? Math.round((subtotal * appliedCoupon.discount_value) / 100)
       : appliedCoupon.discount_value
     : 0
-  const shipping = (subtotal - discount) >= 999 ? 0 : 99
+
+  const freeShippingThreshold = settings?.free_shipping_threshold ?? 999
+  const shippingCharge = settings?.shipping_charge ?? 99
+  const shipping = (subtotal - discount) >= freeShippingThreshold ? 0 : shippingCharge
   const total = subtotal - discount + shipping
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) { toast.error('Please select a delivery address'); return }
+    if (!whatsappNumber.trim()) { toast.error('Please confirm your WhatsApp number'); return }
     if (!user) return
     setPlacing(true)
 
@@ -107,11 +117,19 @@ export default function CheckoutPage() {
       // Call place_order RPC on Supabase
       const { data: order, error: orderError } = await supabase.rpc('place_order', {
         p_address_id: selectedAddressId,
-        p_payment_method: paymentMethod,
+        p_payment_method: 'other', // manual payment
         p_coupon_code: appliedCoupon?.code ?? null
       })
 
       if (orderError) throw orderError
+
+      // Save WhatsApp number to order notes
+      await supabase
+        .from('orders')
+        .update({
+          notes: `WhatsApp: ${whatsappNumber}`
+        })
+        .eq('id', order.id)
 
       // Clear cart
       await clearCart(user.id)
@@ -211,6 +229,7 @@ export default function CheckoutPage() {
 
               {/* Add new address */}
               <button
+                type="button"
                 onClick={() => setShowNewAddress(!showNewAddress)}
                 className="flex items-center gap-2 text-sm font-medium text-[#1a1a2e] border-2 border-dashed border-gray-300 rounded-2xl px-4 py-3 w-full justify-center hover:border-[#1a1a2e] transition-colors mb-4"
               >
@@ -277,6 +296,7 @@ export default function CheckoutPage() {
               )}
 
               <button
+                type="button"
                 onClick={() => {
                   if (!selectedAddressId) { toast.error('Please select an address'); return }
                   setStep('payment')
@@ -292,6 +312,7 @@ export default function CheckoutPage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex items-center gap-2 mb-4">
                 <button
+                  type="button"
                   onClick={() => setStep('address')}
                   className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
@@ -302,28 +323,33 @@ export default function CheckoutPage() {
                 </h2>
               </div>
 
-              <div className="space-y-3">
-                {PAYMENT_METHODS.map((pm) => (
-                  <label
-                    key={pm.id}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${
-                      paymentMethod === pm.id
-                        ? 'border-[#1a1a2e] bg-gray-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={pm.id}
-                      checked={paymentMethod === pm.id}
-                      onChange={() => setPaymentMethod(pm.id)}
-                      className="accent-[#1a1a2e]"
-                    />
-                    <span className="text-xl">{pm.icon}</span>
-                    <span className="font-medium text-gray-900">{pm.label}</span>
+              <div className="space-y-5">
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex gap-4 text-blue-900 text-sm leading-relaxed shadow-sm">
+                  <span className="text-2xl mt-0.5 shrink-0">💳</span>
+                  <div>
+                    <p className="font-bold text-base mb-1">No online payment needed.</p>
+                    <p className="mb-2">Your payment will be collected after your order is confirmed.</p>
+                    <p className="font-medium">
+                      A payment QR code will be sent to your WhatsApp number, or our staff will call you to arrange payment. Just place your order — we'll handle the rest!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                  <label className="block text-sm font-bold text-gray-800">
+                    Confirm WhatsApp Number for Payment QR
                   </label>
-                ))}
+                  <input
+                    type="text"
+                    value={whatsappNumber}
+                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                    placeholder="Enter 10-digit WhatsApp number"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e]"
+                  />
+                  <p className="text-xs text-gray-400 font-medium">
+                    * Make sure this number is active on WhatsApp so we can send you the invoice and payment link.
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}

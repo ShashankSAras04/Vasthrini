@@ -76,6 +76,10 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
               loading="lazy"
               decoding="async"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=60';
+              }}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
@@ -89,6 +93,10 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
               loading="lazy"
               decoding="async"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&auto=format&fit=crop&q=60';
+              }}
             />
           )}
 
@@ -109,6 +117,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* Actions overlay */}
           <div className="absolute inset-0 flex flex-col items-end justify-end p-3 gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
+              type="button"
               onClick={handleWishlist}
               className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all ${
                 wishlisted
@@ -120,6 +129,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               <Heart size={16} fill={wishlisted ? 'currentColor' : 'none'} />
             </button>
             <button
+              type="button"
               onClick={handleAddToCart}
               className="w-9 h-9 rounded-full bg-white text-gray-700 hover:bg-[#1a1a2e] hover:text-white flex items-center justify-center shadow-lg transition-all"
               aria-label="Add to cart"

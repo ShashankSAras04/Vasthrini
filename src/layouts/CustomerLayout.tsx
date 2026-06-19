@@ -8,8 +8,8 @@ import {
 import { useAuthStore } from '../store/useAuthStore'
 import { useCartStore } from '../store/useCartStore'
 import { useWishlistStore } from '../store/useWishlistStore'
+import { useSettingsStore } from '../store/useSettingsStore'
 import toast from 'react-hot-toast'
-import { supabase } from '../lib/supabase'
 
 const InstagramIcon = ({ size = 18 }: { size?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,7 +38,6 @@ export default function CustomerLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [settings, setSettings] = useState<any>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -46,31 +45,22 @@ export default function CustomerLayout() {
   const { user, profile, signOut } = useAuthStore()
   const { getTotalItems } = useCartStore()
   const { items: wishlistItems } = useWishlistStore()
+  const { settings } = useSettingsStore()
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data, error } = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle()
-        if (error) throw error
-        if (data) {
-          setSettings(data)
-          document.title = data.store_name
-          if (data.favicon_url) {
-            let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']")
-            if (!link) {
-              link = document.createElement('link')
-              link.rel = 'shortcut icon'
-              document.head.appendChild(link)
-            }
-            link.href = data.favicon_url
-          }
+    if (settings) {
+      document.title = settings.store_name || 'VASTRINI'
+      if (settings.favicon_url) {
+        let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']")
+        if (!link) {
+          link = document.createElement('link')
+          link.rel = 'shortcut icon'
+          document.head.appendChild(link)
         }
-      } catch (err) {
-        console.error(err)
+        link.href = settings.favicon_url
       }
     }
-    fetchSettings()
-  }, [])
+  }, [settings])
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -440,13 +430,21 @@ export default function CustomerLayout() {
             <div>
               <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Help</h4>
               <ul className="space-y-2.5">
-                {['Track Order', 'Returns', 'Size Guide', 'Contact Us'].map((item) => (
+                {['Track Order', 'Size Guide', 'Contact Us'].map((item) => (
                   <li key={item}>
                     <span className="text-gray-400 text-sm cursor-pointer hover:text-white transition-colors">
                       {item}
                     </span>
                   </li>
                 ))}
+                <li>
+                  <span
+                    onClick={() => toast.error('No Returns Policy: All sales are final.', { duration: 5000 })}
+                    className="text-gray-400 text-sm cursor-pointer hover:text-white transition-colors"
+                  >
+                    No Returns Policy
+                  </span>
+                </li>
                 <li>
                   <Link to="/faq" className="text-gray-400 text-sm hover:text-white transition-colors">
                     FAQs
@@ -475,7 +473,7 @@ export default function CustomerLayout() {
 
           <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-gray-500 text-sm">
-              © {new Date().getFullYear()} Vastrini. All rights reserved.
+              © {new Date().getFullYear()} VASTRINI. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <span className="text-gray-500 text-sm">Privacy Policy</span>

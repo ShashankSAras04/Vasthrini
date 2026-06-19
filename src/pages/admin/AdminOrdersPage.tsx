@@ -152,12 +152,13 @@ export default function AdminOrdersPage() {
           className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none"
         >
           <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="packed">Packed</option>
-          <option value="shipped">Shipped</option>
-          <option value="out_for_delivery">Out For Delivery</option>
-          <option value="delivered">Delivered</option>
+          <option value="pending">Order Confirmed (Pending)</option>
+          <option value="confirmed">Order Confirmed</option>
+          <option value="payment_pending">Payment Pending</option>
+          <option value="payment_done">Payment Done</option>
+          <option value="shipped">Order Shipped</option>
+          <option value="on_the_way">Order On the Way</option>
+          <option value="delivered">Order Delivered</option>
           <option value="cancelled">Cancelled</option>
           <option value="returned">Returned</option>
         </select>
@@ -223,15 +224,23 @@ export default function AdminOrdersPage() {
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                           o.status === 'delivered'
                             ? 'bg-emerald-50 text-emerald-700'
-                            : o.status === 'pending'
+                            : (o.status === 'pending' || o.status === 'confirmed')
+                            ? 'bg-blue-50 text-blue-700'
+                            : o.status === 'payment_pending'
                             ? 'bg-amber-50 text-amber-700'
+                            : o.status === 'payment_done'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : o.status === 'shipped'
+                            ? 'bg-purple-50 text-purple-700'
+                            : o.status === 'on_the_way'
+                            ? 'bg-orange-50 text-orange-700'
                             : o.status === 'cancelled'
                             ? 'bg-rose-50 text-rose-700'
-                            : 'bg-blue-50 text-blue-700'
+                            : 'bg-slate-50 text-slate-700'
                         }`}>
-                          {o.status === 'pending' && <Clock size={12} />}
+                          {(o.status === 'pending' || o.status === 'confirmed' || o.status === 'payment_pending') && <Clock size={12} />}
                           {o.status === 'delivered' && <CheckCircle2 size={12} />}
-                          {o.status.toUpperCase()}
+                          {o.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -344,12 +353,13 @@ export default function AdminOrdersPage() {
                     onChange={(e) => setOrderStatus(e.target.value as OrderStatus)}
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:border-slate-400"
                   >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="packed">Packed</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="out_for_delivery">Out for Delivery</option>
-                    <option value="delivered">Delivered</option>
+                    <option value="pending">Order Confirmed (Pending)</option>
+                    <option value="confirmed">Order Confirmed</option>
+                    <option value="payment_pending">Payment Pending</option>
+                    <option value="payment_done">Payment Done</option>
+                    <option value="shipped">Order Shipped</option>
+                    <option value="on_the_way">Order On the Way</option>
+                    <option value="delivered">Order Delivered</option>
                     <option value="cancelled">Cancelled</option>
                     <option value="returned">Returned</option>
                   </select>

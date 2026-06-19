@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { supabase } from '../../lib/supabase';
 import type { Coupon } from '../../types/database';
 import toast from 'react-hot-toast';
@@ -20,10 +21,15 @@ export default function CartPage() {
   const navigate = useNavigate();
   const { items, updateQuantity, removeFromCart, appliedCoupon, setAppliedCoupon } = useCartStore();
   const { user } = useAuthStore();
+  const { settings } = useSettingsStore();
 
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
+
+  useEffect(() => {
+    document.title = 'Shopping Cart - VASTRINI';
+  }, []);
 
   const getItemPrice = (item: (typeof items)[number]) => {
     const base =
@@ -36,7 +42,9 @@ export default function CartPage() {
     0
   );
 
-  const shipping = subtotal >= 999 ? 0 : 99;
+  const freeShippingThreshold = settings?.free_shipping_threshold ?? 999;
+  const shippingCharge = settings?.shipping_charge ?? 99;
+  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingCharge;
 
   const discount = appliedCoupon
     ? appliedCoupon.discount_type === 'percentage'
@@ -155,6 +163,10 @@ export default function CartPage() {
                           className="w-20 h-20 object-cover rounded-xl"
                           loading="lazy"
                           decoding="async"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=60';
+                          }}
                         />
                       ) : (
                         <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center">
@@ -183,6 +195,7 @@ export default function CartPage() {
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-2 mt-3">
                         <button
+                          type="button"
                           onClick={() =>
                             item.quantity > 1
                               ? updateQuantity(user?.id ?? '', item.id, item.quantity - 1)
@@ -197,6 +210,7 @@ export default function CartPage() {
                           {item.quantity}
                         </span>
                         <button
+                          type="button"
                           onClick={() =>
                             updateQuantity(user?.id ?? '', item.id, item.quantity + 1)
                           }
@@ -214,6 +228,7 @@ export default function CartPage() {
                         ₹{(price * item.quantity).toLocaleString('en-IN')}
                       </p>
                       <button
+                        type="button"
                         onClick={() => removeFromCart(user?.id ?? '', item.id)}
                         className="text-gray-400 hover:text-red-500 transition-colors"
                         aria-label="Remove item"
@@ -255,6 +270,7 @@ export default function CartPage() {
                       {appliedCoupon.code} applied
                     </span>
                     <button
+                      type="button"
                       onClick={handleRemoveCoupon}
                       className="text-xs text-red-400 hover:text-red-600 underline"
                     >
@@ -276,6 +292,7 @@ export default function CartPage() {
                         onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
                       />
                       <button
+                        type="button"
                         onClick={handleApplyCoupon}
                         disabled={couponLoading || !couponCode.trim()}
                         className="bg-gray-900 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -314,7 +331,7 @@ export default function CartPage() {
 
               {shipping > 0 && (
                 <p className="text-xs text-gray-400 -mt-2">
-                  Add ₹{(999 - subtotal).toLocaleString('en-IN')} more for free shipping
+                  Add ₹{(freeShippingThreshold - subtotal).toLocaleString('en-IN')} more for free shipping
                 </p>
               )}
 
@@ -328,6 +345,7 @@ export default function CartPage() {
 
               {/* Proceed to Checkout */}
               <button
+                type="button"
                 onClick={() => navigate('/checkout')}
                 className="bg-[#e94560] text-white w-full py-4 rounded-2xl font-bold text-lg hover:bg-[#c73652] transition-colors mt-1"
               >

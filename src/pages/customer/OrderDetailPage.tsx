@@ -5,14 +5,22 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
 import type { Order } from '../../types/database'
 
-const STATUS_STEPS = ['pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered']
+const STATUS_STEPS = [
+  { key: 'confirmed', label: 'Order Confirmed' },
+  { key: 'payment_pending', label: 'Payment Pending' },
+  { key: 'payment_done', label: 'Payment Done' },
+  { key: 'shipped', label: 'Order Shipped' },
+  { key: 'on_the_way', label: 'Order On the Way' },
+  { key: 'delivered', label: 'Order Delivered' },
+]
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-700',
+  pending: 'bg-blue-100 text-blue-700',
   confirmed: 'bg-blue-100 text-blue-700',
-  packed: 'bg-indigo-100 text-indigo-700',
+  payment_pending: 'bg-amber-100 text-amber-700',
+  payment_done: 'bg-emerald-100 text-emerald-700',
   shipped: 'bg-purple-100 text-purple-700',
-  out_for_delivery: 'bg-orange-100 text-orange-700',
+  on_the_way: 'bg-orange-100 text-orange-700',
   delivered: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
   returned: 'bg-gray-100 text-gray-700',
@@ -61,7 +69,18 @@ export default function OrderDetailPage() {
 
   const items = (order as any).items || []
   const address = (order as any).address
-  const currentStep = STATUS_STEPS.indexOf(order.status)
+
+  const getStepIndex = (status: string) => {
+    if (status === 'confirmed' || status === 'pending') return 0
+    if (status === 'payment_pending') return 1
+    if (status === 'payment_done') return 2
+    if (status === 'shipped') return 3
+    if (status === 'on_the_way') return 4
+    if (status === 'delivered') return 5
+    return -1
+  }
+
+  const currentStep = getStepIndex(order.status)
   const isCancelled = order.status === 'cancelled' || order.status === 'returned'
 
   return (
@@ -106,7 +125,7 @@ export default function OrderDetailPage() {
               const done = i <= currentStep
               const active = i === currentStep
               return (
-                <div key={step} className="flex-1 flex flex-col items-center relative">
+                <div key={step.key} className="flex-1 flex flex-col items-center relative">
                   {/* Line */}
                   {i < STATUS_STEPS.length - 1 && (
                     <div
@@ -130,10 +149,10 @@ export default function OrderDetailPage() {
                       <Clock size={14} className="text-white" />
                     ) : null}
                   </div>
-                  <span className={`text-[10px] mt-2 text-center font-medium capitalize ${
+                  <span className={`text-[9px] sm:text-[10px] mt-2 text-center font-semibold leading-tight max-w-[80px] ${
                     done ? 'text-gray-900' : 'text-gray-400'
                   }`}>
-                    {step.replace(/_/g, ' ')}
+                    {step.label}
                   </span>
                 </div>
               )

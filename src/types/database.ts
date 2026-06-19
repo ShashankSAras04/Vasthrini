@@ -4,7 +4,7 @@ export type UserRole = 'customer' | 'admin'
 export type GenderType = 'men' | 'women' | 'unisex' | 'kids' | 'boys' | 'girls'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type PaymentMethod = 'cod' | 'bank_transfer' | 'upi' | 'other'
-export type OrderStatus = 'pending' | 'confirmed' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned'
+export type OrderStatus = 'pending' | 'confirmed' | 'payment_pending' | 'payment_done' | 'shipped' | 'on_the_way' | 'delivered' | 'cancelled' | 'returned'
 export type DiscountType = 'percentage' | 'flat'
 
 export interface Profile {

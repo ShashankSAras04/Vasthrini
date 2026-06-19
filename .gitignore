@@ -28,3 +28,8 @@ dist-ssr
 
 # Scripts directory (may contain sensitive keys)
 scripts/
+
+# Agent and temporary files
+.agents/
+skills-lock.json
+supabase/.temp/

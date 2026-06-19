@@ -92,6 +92,7 @@ function FilterSection({
   return (
     <div className="border-b border-gray-100 py-4">
       <button
+        type="button"
         onClick={() => setOpen(o => !o)}
         className="flex w-full items-center justify-between text-sm font-semibold text-gray-800 hover:text-gray-600 transition-colors"
       >
@@ -234,6 +235,7 @@ function FilterPanel({
           />
         </div>
         <button
+          type="button"
           onClick={applyPrice}
           className="mt-2 w-full text-xs text-rose-600 font-medium hover:text-rose-800 transition-colors"
         >
@@ -277,6 +279,17 @@ export default function ShopPage() {
   const navigate = useNavigate();
   const { params, setParams } = useFilterParams();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    document.title = 'Shop - VASTRINI';
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', 'Explore and shop the latest premium women\'s fashion collections on VASTRINI.');
+  }, []);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data: categories = [] } = useQuery<Category[]>({
@@ -512,6 +525,7 @@ export default function ShopPage() {
                   >
                     {chip.label}
                     <button
+                      type="button"
                       onClick={chip.onRemove}
                       className="ml-0.5 hover:text-rose-900 transition-colors"
                       aria-label={`Remove filter ${chip.label}`}
@@ -521,6 +535,7 @@ export default function ShopPage() {
                   </span>
                 ))}
                 <button
+                  type="button"
                   onClick={clearAll}
                   className="text-xs text-gray-500 underline hover:text-gray-800 transition-colors"
                 >
@@ -544,6 +559,7 @@ export default function ShopPage() {
                   Try adjusting or clearing your filters to discover more products.
                 </p>
                 <button
+                  type="button"
                   onClick={clearAll}
                   className="mt-5 px-5 py-2.5 bg-rose-500 text-white rounded-full text-sm font-medium hover:bg-rose-600 transition-colors"
                 >
@@ -562,6 +578,7 @@ export default function ShopPage() {
             {!isLoading && totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-10">
                 <button
+                  type="button"
                   onClick={() => goToPage(currentPage - 1)}
                   disabled={currentPage === 1}
                   className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -590,6 +607,7 @@ export default function ShopPage() {
                       </span>
                     ) : (
                       <button
+                        type="button"
                         key={p}
                         onClick={() => goToPage(p as number)}
                         className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
@@ -604,6 +622,7 @@ export default function ShopPage() {
                   )}
 
                 <button
+                  type="button"
                   onClick={() => goToPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -619,6 +638,7 @@ export default function ShopPage() {
       {/* ── Mobile: floating filter button ──────────────────────────────────── */}
       <div className="lg:hidden">
         <button
+          type="button"
           onClick={() => setMobileDrawerOpen(true)}
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-rose-500 text-white px-5 py-3 rounded-full shadow-lg font-medium text-sm hover:bg-rose-600 active:scale-95 transition-all"
         >
@@ -663,6 +683,7 @@ export default function ShopPage() {
                   <span className="font-bold text-gray-900">Filters</span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setMobileDrawerOpen(false)}
                   className="p-1.5 rounded-full hover:bg-gray-100 transition-colors text-gray-500"
                   aria-label="Close filters"
@@ -684,6 +705,7 @@ export default function ShopPage() {
               {/* Apply button */}
               <div className="flex-shrink-0 px-5 py-4 border-t border-gray-100">
                 <button
+                  type="button"
                   onClick={() => setMobileDrawerOpen(false)}
                   className="w-full bg-rose-500 text-white py-3 rounded-full font-semibold text-sm hover:bg-rose-600 transition-colors"
                 >

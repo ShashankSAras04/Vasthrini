@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useCartStore } from '../../store/useCartStore'
 import { useWishlistStore } from '../../store/useWishlistStore'
+import { useSettingsStore } from '../../store/useSettingsStore'
 import ProductCard from '../../components/ProductCard'
 import type { Product, ProductVariant } from '../../types/database'
 
@@ -20,11 +21,14 @@ export default function ProductDetailPage() {
   const { user } = useAuthStore()
   const { addToCart } = useCartStore()
   const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlistStore()
+  const { settings } = useSettingsStore()
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [activeImage, setActiveImage] = useState(0)
   const [addingToCart, setAddingToCart] = useState(false)
+
+  const freeShippingThreshold = settings?.free_shipping_threshold ?? 999
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -46,6 +50,19 @@ export default function ProductDetailPage() {
     },
     enabled: !!slug,
   })
+
+  useEffect(() => {
+    if (product) {
+      document.title = `${product.name} - VASTRINI`
+      let metaDesc = document.querySelector('meta[name="description"]')
+      if (!metaDesc) {
+        metaDesc = document.createElement('meta')
+        metaDesc.setAttribute('name', 'description')
+        document.head.appendChild(metaDesc)
+      }
+      metaDesc.setAttribute('content', product.description || `Buy ${product.name} online at VASTRINI.`)
+    }
+  }, [product])
 
   const { data: relatedProducts } = useQuery({
     queryKey: ['related-products', product?.category_id],
@@ -194,6 +211,10 @@ export default function ProductDetailPage() {
                   className="w-full h-full object-cover"
                   loading="lazy"
                   decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=60';
+                  }}
                 />
               </AnimatePresence>
 
@@ -210,13 +231,22 @@ export default function ProductDetailPage() {
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {images.map((img, i) => (
                   <button
+                    type="button"
                     key={img.id}
                     onClick={() => setActiveImage(i)}
                     className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-colors ${
                       activeImage === i ? 'border-[#e94560]' : 'border-gray-200 hover:border-gray-400'
                     }`}
                   >
-                    <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={img.image_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=60';
+                      }}
+                    />
                   </button>
                 ))}
               </div>
@@ -279,11 +309,12 @@ export default function ProductDetailPage() {
                     Size:{' '}
                     <span className="font-normal text-gray-500">{selectedSize || 'Select'}</span>
                   </p>
-                  <button className="text-xs text-[#e94560] underline">Size Guide</button>
+                  <button type="button" className="text-xs text-[#e94560] underline">Size Guide</button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {availableSizes.map(({ size, stock }) => (
                     <button
+                      type="button"
                       key={size}
                       onClick={() => setSelectedSize(size)}
                       disabled={stock === 0}
@@ -317,6 +348,7 @@ export default function ProductDetailPage() {
               <p className="text-sm font-semibold text-gray-700">Quantity:</p>
               <div className="flex items-center gap-0 border border-gray-200 rounded-xl overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                 >
@@ -324,6 +356,7 @@ export default function ProductDetailPage() {
                 </button>
                 <span className="w-12 text-center font-semibold text-gray-900">{quantity}</span>
                 <button
+                  type="button"
                   onClick={() => setQuantity((q) => Math.min(q + 1, selectedVariant?.stock ?? 99))}
                   disabled={!!selectedVariant && quantity >= selectedVariant.stock}
                   className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -336,6 +369,7 @@ export default function ProductDetailPage() {
             {/* CTA Buttons */}
             <div className="flex gap-3 mb-8">
               <button
+                type="button"
                 onClick={handleAddToCart}
                 disabled={addingToCart || (selectedVariant?.stock === 0)}
                 className="flex-1 flex items-center justify-center gap-2 py-4 bg-[#1a1a2e] text-white font-bold text-base rounded-2xl hover:bg-[#e94560] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -350,6 +384,7 @@ export default function ProductDetailPage() {
                 )}
               </button>
               <button
+                type="button"
                 onClick={handleWishlist}
                 className={`w-14 h-14 flex items-center justify-center rounded-2xl border-2 transition-all ${
                   wishlisted
@@ -359,7 +394,7 @@ export default function ProductDetailPage() {
               >
                 <Heart size={20} fill={wishlisted ? 'currentColor' : 'none'} />
               </button>
-              <button className="w-14 h-14 flex items-center justify-center rounded-2xl border-2 border-gray-200 text-gray-700 hover:border-gray-400 transition-all">
+              <button type="button" className="w-14 h-14 flex items-center justify-center rounded-2xl border-2 border-gray-200 text-gray-700 hover:border-gray-400 transition-all">
                 <Share2 size={20} />
               </button>
             </div>
@@ -367,8 +402,8 @@ export default function ProductDetailPage() {
             {/* Trust badges */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               {[
-                { icon: Truck, label: 'Free Delivery', sub: 'Orders over ₹999' },
-                { icon: RotateCcw, label: 'Easy Returns', sub: '30 day returns' },
+                { icon: Truck, label: 'Free Delivery', sub: `Orders over ₹${freeShippingThreshold}` },
+                { icon: RotateCcw, label: 'No Returns Policy', sub: 'All sales final' },
                 { icon: Shield, label: 'Secure Payment', sub: '100% protected' },
                 { icon: Package, label: 'Premium Quality', sub: 'Verified products' },
               ].map((badge) => (

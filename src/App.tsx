@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { useAuthStore } from './store/useAuthStore'
 import { useCartStore } from './store/useCartStore'
 import { useWishlistStore } from './store/useWishlistStore'
+import { useSettingsStore } from './store/useSettingsStore'
 import ErrorBoundary from './components/ErrorBoundary'
 
 // Layouts (not lazy — tiny, needed immediately)
@@ -28,6 +29,7 @@ const OrderDetailPage   = lazy(() => import('./pages/customer/OrderDetailPage'))
 const ProfilePage       = lazy(() => import('./pages/customer/ProfilePage'))
 const AuthPage          = lazy(() => import('./pages/customer/AuthPage'))
 const FAQPage           = lazy(() => import('./pages/customer/FAQPage'))
+const NotFoundPage      = lazy(() => import('./pages/customer/NotFoundPage'))
 
 // ─── Lazy-loaded Admin Pages ──────────────────────────────────────────────────
 const AdminOverviewPage   = lazy(() => import('./pages/admin/AdminOverviewPage'))
@@ -38,6 +40,7 @@ const AdminCouponsPage    = lazy(() => import('./pages/admin/AdminCouponsPage'))
 const AdminUsersPage      = lazy(() => import('./pages/admin/AdminUsersPage'))
 const AdminSettingsPage   = lazy(() => import('./pages/admin/AdminSettingsPage'))
 const AdminFAQsPage       = lazy(() => import('./pages/admin/AdminFAQsPage'))
+const AdminAnalyticsPage  = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,8 +64,10 @@ function AppContent() {
   const { setUser, setSession, setLoading, fetchProfile } = useAuthStore()
   const { fetchCart } = useCartStore()
   const { fetchWishlist } = useWishlistStore()
+  const { fetchSettings } = useSettingsStore()
 
   useEffect(() => {
+    fetchSettings().catch(console.error)
     // Initialize auth from existing session
     supabase.auth.getSession()
       .then(({ data: { session } }: any) => {
@@ -157,10 +162,11 @@ function AppContent() {
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
               <Route path="faqs" element={<AdminFAQsPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

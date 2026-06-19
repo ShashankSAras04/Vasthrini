@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, ShoppingBag, Package, Tag, Ticket,
   Users, Settings, ChevronLeft, Menu, LogOut,
-  ExternalLink, Bell, HelpCircle
+  ExternalLink, Bell, HelpCircle, Activity
 } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
 import toast from 'react-hot-toast'
 
 const navItems = [
   { label: 'Overview', href: '/admin', icon: LayoutDashboard, exact: true },
+  { label: 'Analytics', href: '/admin/analytics', icon: Activity },
   { label: 'Products', href: '/admin/products', icon: ShoppingBag },
   { label: 'Orders', href: '/admin/orders', icon: Package },
   { label: 'Categories', href: '/admin/categories', icon: Tag },

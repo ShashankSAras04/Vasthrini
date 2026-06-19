@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Headphones, Shield, Truck } from 'lucide-react';
@@ -81,6 +82,17 @@ const trustBadges = [
 // ---------------------------------------------------------------------------
 export default function HomePage() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'VASTRINI - Premium Women\'s Fashion';
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', 'Shop premium women\'s clothing, dresses, tops, activewear and more on VASTRINI. Free delivery over ₹999.');
+  }, []);
 
   // ── Categories Query ──────────────────────────────────────────────────────
   const {
@@ -251,6 +263,10 @@ export default function HomePage() {
             <motion.div variants={fadeInUp}>
               {categoriesLoading ? (
                 <CategorySkeleton />
+              ) : (categories ?? []).length === 0 ? (
+                <div className="w-full text-center py-12 text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200 font-medium">
+                  No categories found. Seeding catalog in progress...
+                </div>
               ) : (
                 <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
                   {(categories ?? []).map((cat) => (
@@ -260,7 +276,7 @@ export default function HomePage() {
                       style={
                         cat.image
                           ? {
-                              backgroundImage: `url(${cat.image})`,
+                              backgroundImage: `url(${cat.image}), url('https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800&auto=format&fit=crop')`,
                               backgroundSize: 'cover',
                               backgroundPosition: 'center',
                             }
@@ -313,6 +329,10 @@ export default function HomePage() {
             <motion.div variants={fadeInUp}>
               {productsLoading ? (
                 <ProductSkeleton />
+              ) : (featuredProducts ?? []).length === 0 ? (
+                <div className="w-full text-center py-16 text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200 font-medium col-span-full">
+                  No featured products available. Keep exploring!
+                </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
                   {(featuredProducts ?? []).map((product) => (
