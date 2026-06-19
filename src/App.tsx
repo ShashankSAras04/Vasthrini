@@ -7,6 +7,7 @@ import { useAuthStore } from './store/useAuthStore'
 import { useCartStore } from './store/useCartStore'
 import { useWishlistStore } from './store/useWishlistStore'
 import { useSettingsStore } from './store/useSettingsStore'
+import { useRealtimeSync } from './hooks/useRealtimeSync'
 import ErrorBoundary from './components/ErrorBoundary'
 
 // Layouts (not lazy — tiny, needed immediately)
@@ -61,6 +62,7 @@ function PageLoader() {
 }
 
 function AppContent() {
+  useRealtimeSync()
   const { setUser, setSession, setLoading, fetchProfile } = useAuthStore()
   const { fetchCart } = useCartStore()
   const { fetchWishlist } = useWishlistStore()

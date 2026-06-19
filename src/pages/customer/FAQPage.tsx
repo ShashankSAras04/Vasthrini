@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, ChevronDown, HelpCircle, MessageSquare } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useSEO } from '../../hooks/useSEO'
 
 interface FAQ {
   id: string
@@ -16,7 +17,6 @@ export default function FAQPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
-
   const { data: faqs, isLoading } = useQuery<FAQ[]>({
     queryKey: ['faqs'],
     queryFn: async () => {
@@ -29,6 +29,25 @@ export default function FAQPage() {
       return data as FAQ[]
     }
   })
+  const faqSchema = faqs ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'mainEntity': faqs.map(faq => ({
+      '@type': 'Question',
+      'name': faq.question,
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': faq.answer
+      }
+    }))
+  } : undefined;
+
+  useSEO({
+    title: 'FAQ - Help & Support',
+    description: 'Frequently Asked Questions about orders, payments, delivery, and policies at VASTRINI.',
+    keywords: 'VASTRINI help, FAQ, support, questions, answers, delivery help',
+    schema: faqSchema
+  });
 
   // Extract categories dynamically
   const categories = faqs ? Array.from(new Set(faqs.map(f => f.category).filter(Boolean))) : []

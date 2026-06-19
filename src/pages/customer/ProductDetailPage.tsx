@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,6 +7,7 @@ import {
   Share2, Package, RotateCcw, Shield, Truck
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useSEO } from '../../hooks/useSEO'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useCartStore } from '../../store/useCartStore'
@@ -51,18 +52,67 @@ export default function ProductDetailPage() {
     enabled: !!slug,
   })
 
-  useEffect(() => {
-    if (product) {
-      document.title = `${product.name} - VASTRINI`
-      let metaDesc = document.querySelector('meta[name="description"]')
-      if (!metaDesc) {
-        metaDesc = document.createElement('meta')
-        metaDesc.setAttribute('name', 'description')
-        document.head.appendChild(metaDesc)
-      }
-      metaDesc.setAttribute('content', product.description || `Buy ${product.name} online at VASTRINI.`)
+  const seoSchema = product ? [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      'name': product.name,
+      'description': product.description || `Buy ${product.name} online at VASTRINI.`,
+      'image': product.images?.map(img => img.image_url) || [],
+      'sku': product.sku || product.id,
+      'brand': {
+        '@type': 'Brand',
+        'name': product.brand?.name || 'VASTRINI'
+      },
+      'offers': {
+        '@type': 'Offer',
+        'priceCurrency': 'INR',
+        'price': product.discount_price ?? product.price ?? 0,
+        'itemCondition': 'https://schema.org/NewCondition',
+        'availability': product.stock && product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        'url': window.location.href
+      },
+      ...(product.rating_count && product.rating_count > 0 ? {
+        'aggregateRating': {
+          '@type': 'AggregateRating',
+          'ratingValue': product.rating_avg || 5,
+          'reviewCount': product.rating_count
+        }
+      } : {})
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        {
+          '@type': 'ListItem',
+          'position': 1,
+          'name': 'Home',
+          'item': window.location.origin
+        },
+        {
+          '@type': 'ListItem',
+          'position': 2,
+          'name': product.category?.name || 'Shop',
+          'item': `${window.location.origin}/shop?category=${product.category?.slug || ''}`
+        },
+        {
+          '@type': 'ListItem',
+          'position': 3,
+          'name': product.name,
+          'item': window.location.href
+        }
+      ]
     }
-  }, [product])
+  ] : undefined;
+
+  useSEO({
+    title: product?.name,
+    description: product?.description || undefined,
+    ogImage: product?.images?.[0]?.image_url,
+    keywords: product ? `${product.name}, ${product.category?.name || ''}, VASTRINI, buy online` : undefined,
+    schema: seoSchema
+  });
 
   const { data: relatedProducts } = useQuery({
     queryKey: ['related-products', product?.category_id],

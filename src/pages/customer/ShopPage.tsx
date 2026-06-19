@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import ProductCard from '../../components/ProductCard';
 import type { Product, Category, Brand } from '../../types/database';
+import { useSEO } from '../../hooks/useSEO';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GENDER_OPTIONS = ['Women', 'Unisex', 'Kids', 'Boys', 'Girls'] as const;
@@ -280,16 +281,31 @@ export default function ShopPage() {
   const { params, setParams } = useFilterParams();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  useEffect(() => {
-    document.title = 'Shop - VASTRINI';
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.setAttribute('name', 'description');
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.setAttribute('content', 'Explore and shop the latest premium women\'s fashion collections on VASTRINI.');
-  }, []);
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': [
+      {
+        '@type': 'ListItem',
+        'position': 1,
+        'name': 'Home',
+        'item': window.location.origin
+      },
+      {
+        '@type': 'ListItem',
+        'position': 2,
+        'name': 'Shop',
+        'item': `${window.location.origin}/shop`
+      }
+    ]
+  };
+
+  useSEO({
+    title: 'Shop - Collections',
+    description: 'Explore and shop the latest premium women\'s fashion collections on VASTRINI.',
+    keywords: 'VASTRINI collections, shop online, women dresses, tops, activewear, fashion trends',
+    schema: breadcrumbSchema
+  });
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const { data: categories = [] } = useQuery<Category[]>({

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Headphones, Shield, Truck } from 'lucide-react';
@@ -6,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import ProductCard from '../../components/ProductCard';
 import { supabase } from '../../lib/supabase';
 import type { Product, Category } from '../../types/database';
+import { useSEO } from '../../hooks/useSEO';
 
 // Reused global types from '../../types/database'
 
@@ -83,16 +83,37 @@ const trustBadges = [
 export default function HomePage() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    document.title = 'VASTRINI - Premium Women\'s Fashion';
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.setAttribute('name', 'description');
-      document.head.appendChild(metaDesc);
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      'name': 'VASTRINI',
+      'url': window.location.origin,
+      'logo': `${window.location.origin}/logo.png`,
+      'sameAs': [
+        'https://www.instagram.com/vastrinifashion',
+        'https://www.facebook.com/vastrinifashion'
+      ]
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      'name': 'VASTRINI',
+      'url': window.location.origin,
+      'potentialAction': {
+        '@type': 'SearchAction',
+        'target': `${window.location.origin}/shop?search={search_term_string}`,
+        'query-input': 'required name=search_term_string'
+      }
     }
-    metaDesc.setAttribute('content', 'Shop premium women\'s clothing, dresses, tops, activewear and more on VASTRINI. Free delivery over ₹999.');
-  }, []);
+  ];
+
+  useSEO({
+    title: 'Premium Women\'s Fashion',
+    description: 'Shop premium women\'s clothing, dresses, tops, activewear and more on VASTRINI. Free delivery over ₹999.',
+    keywords: 'VASTRINI, fashion, women clothing, dresses, tops, online shop, premium fashion',
+    schema
+  });
 
   // ── Categories Query ──────────────────────────────────────────────────────
   const {

@@ -1,9 +1,12 @@
 User-agent: *
 Allow: /
-
-# Block admin routes from indexing
 Disallow: /admin
-Disallow: /admin/
+Disallow: /admin/*
+Disallow: /checkout
+Disallow: /checkout/*
+Disallow: /profile
+Disallow: /profile/*
+Disallow: /orders
+Disallow: /orders/*
 
-# Sitemap
 Sitemap: https://vasthrini.vercel.app/sitemap.xml
